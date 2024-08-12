@@ -1,14 +1,15 @@
-from settings_base import *
+from .settings_base import *
 import os
 DEBUG = False
 SECRET_KEY = os.getenv("SECRET_KEY")
+ALLOWED_HOSTS = ["127.0.0.1"]
 allowed_hosts = []
 for host in os.getenv("ALLOWED_HOST").split(","):
     allowed_hosts.append(host)
 
 ALLOWED_HOSTS = allowed_hosts
 CORS_ALLOW_ALL_ORIGINS = True
-
+SIMPLE_JWT["SIGNING_KEY"] =  SECRET_KEY
 
 DATABASES = {
     'default': {
