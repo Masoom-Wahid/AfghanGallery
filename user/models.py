@@ -1,9 +1,8 @@
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
-from django.contrib.auth.models import AbstractUser,BaseUserManager,PermissionsMixin
+from django.contrib.auth.models import BaseUserManager,PermissionsMixin
 from django.core.validators import RegexValidator
-from django.contrib.auth.hashers import make_password
-
+from django.contrib.auth import get_user_model
 
 
 class CustomUserManager(BaseUserManager):
@@ -37,8 +36,7 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
         max_length=55, validators=[phone_validator], blank=True,null=True
     )
     is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
-    # TODO: add payment_plan a Ref to PaymentPlan Table
+    is_superuser = models.BooleanField(default=False) 
 
 
     class Meta:
@@ -52,3 +50,33 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+
+
+
+
+
+
+class Room(models.Model):
+    user1 = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="first_user")
+    user2 = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="second_user")
+
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.user1.email} => {self.user2.email}"
+
+
+class Message(models.Model):
+    sender = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="sender")
+    receiver = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="receiver")
+    room_id = models.ForeignKey(Room,on_delete=models.CASCADE)
+    msg = models.TextField(null=False,blank=False,) 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+        
+    def __str__(self) -> str:
+        return self.msg
+    

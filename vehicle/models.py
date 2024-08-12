@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from payment.models import PaymentPlan
 
 VEHICLE_TYPES = (
     ("rental","Rental"),
@@ -11,6 +12,7 @@ GEAR_TYPES = (
     ("manual","Manual"),
     ("auto","Automatic"),
 )
+
 
 
 class VehicleCategory(models.Model):
@@ -56,7 +58,8 @@ class Vehicle(models.Model):
     warranty = models.BooleanField(default=False)
     swap = models.BooleanField(default=False)
 
-    #TODO: add 'payment_id' REF to Payment_Plan
+    payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL) 
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import RealEstate,RealEstateType,RealEstateImage
 
-# Register your models here.
+
+admin.site.register(RealEstate)
+admin.site.register(RealEstateType)
+admin.site.register(RealEstateImage)

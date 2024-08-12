@@ -1,4 +1,5 @@
 from .settings_base import *
+import os
 JWT_EXPIRATION_TIME_SECONDS = 172800
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True

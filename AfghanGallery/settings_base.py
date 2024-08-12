@@ -20,7 +20,10 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "corsheaders",
     "user",
-    "vehicle"
+    "payment",
+    "vehicle",
+    "realestate",
+    "user_info"
 ]
 
 MIDDLEWARE = [
