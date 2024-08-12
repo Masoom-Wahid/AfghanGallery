@@ -1,0 +1,2 @@
+# AfghanGallery
+API for AfghanGallery
