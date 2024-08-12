@@ -10,7 +10,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -19,7 +18,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
-    "corsheaders"
+    "corsheaders",
+    "user"
 ]
 
 MIDDLEWARE = [
@@ -37,6 +37,9 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'AfghanGallery.urls'
 
 WSGI_APPLICATION = 'AfghanGallery.wsgi.application'
+
+AUTH_USER_MODEL = 'user.CustomUser'
+
 
 DATABASES = {
     'default': {
