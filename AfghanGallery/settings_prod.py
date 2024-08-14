@@ -1,6 +1,8 @@
 from .settings_base import *
 import os
 DEBUG = False
+JWT_EXPIRATION_TIME = 172800
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALLOWED_HOSTS = ["127.0.0.1"]
 allowed_hosts = []
@@ -9,7 +11,6 @@ for host in os.getenv("ALLOWED_HOST","").split(","):
 
 ALLOWED_HOSTS = allowed_hosts
 CORS_ALLOW_ALL_ORIGINS = True
-SIMPLE_JWT["SIGNING_KEY"] =  SECRET_KEY
 
 DATABASES = {
     'default': {

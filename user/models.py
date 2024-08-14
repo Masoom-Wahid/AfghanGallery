@@ -26,18 +26,20 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser,PermissionsMixin):
 
     email = models.EmailField(blank=False, null=False, unique=True)
-    username = models.CharField(blank=True, null=True, unique=True, max_length=50)
+    name = models.CharField(blank=False, null=False, max_length=50)
+    last_name = models.CharField(blank=False, null=False, max_length=50)
     is_verified = models.BooleanField(default=False)
     phone_regex = r"^07[02346789]\d{7}|02[0]\d{7}"
     phone_validator = RegexValidator(
         regex=phone_regex, message="Enter a valid phone number."
     )
     phone_no = models.CharField(
-        max_length=55, validators=[phone_validator], blank=True,null=True
+        max_length=55, validators=[phone_validator], blank=False,null=False,unique=True
     )
     is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False) 
+    is_superuser = models.BooleanField(default=False)
 
+    tazkira = models.FileField(upload_to="tazkira",null=True,blank=True)
 
     class Meta:
         swappable = "AUTH_USER_MODEL"
@@ -47,6 +49,7 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
+    REQUIRED_FIELDS=["phone_no","name","last_name"]
 
     def __str__(self) -> str:
         return self.email
@@ -72,11 +75,10 @@ class Message(models.Model):
     sender = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="sender")
     receiver = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="receiver")
     room_id = models.ForeignKey(Room,on_delete=models.CASCADE)
-    msg = models.TextField(null=False,blank=False,) 
+    msg = models.TextField(null=False,blank=False,)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-        
+
     def __str__(self) -> str:
         return self.msg
-    
