@@ -10,10 +10,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     last_name = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     phone_no = serializers.CharField(required=True, allow_blank=False, allow_null=False)
-
+    is_verified = serializers.CharField(read_only=True)
     class Meta:
         model = get_user_model()
-        fields = ['email', 'password', 'name', 'last_name', 'phone_no',"is_verified","is_staff","is_superuser"]
+        fields = ['email', 'password', 'name', 'last_name', 'phone_no',"is_verified"]
 
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):

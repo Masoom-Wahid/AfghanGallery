@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
+from user import paginations
 from .token_factory import create_token
 from .serializers import (
     CustomUserSerializer,
@@ -11,13 +12,15 @@ from .serializers import (
     AuthSerializerClass
 )
 from django.shortcuts import get_object_or_404
-from .perms import IsOwnerOrAdminOrStaff
+from .perms import IsOwnerOrAdminOrStaff,IsAdmin
 from rest_framework.mixins import CreateModelMixin,UpdateModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from .paginations import StaffPagination
+from rest_framework.pagination import PageNumberPagination
 
 class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericViewSet):
     queryset = get_user_model().objects.all()
@@ -29,6 +32,8 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
             return [AllowAny()]
         elif self.action in  ["update","destroy","upload_tazkira"]:
             return [IsAuthenticated(),IsOwnerOrAdminOrStaff()]
+        elif self.action == "staff":
+            return [IsAdmin()]
         return super().get_permissions()
 
 
@@ -40,6 +45,85 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         instance.save()
         token = create_token(instance)
         return Response({"token": token}, status=status.HTTP_201_CREATED)
+
+
+
+    @swagger_auto_schema(
+            methods=["get"],
+            operation_id="staff_list",
+            summary="Retrieve a list of staff users",
+            description="Retrieve a list of staff users who have is_staff=True but are not is_superuser.",
+            responses={
+                200: openapi.Response(
+                    description='A list of staff users',
+                    schema=CustomUserSerializer
+                ),
+                400: openapi.Response(
+                    description='Bad request',
+                    schema=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message'),
+                        }
+                    )
+                )
+            },
+            tags=['Staff Management']
+        )
+    @swagger_auto_schema(
+            methods=['post'],
+            operation_id="staff_create",
+            summary="Create a new staff user",
+            description="Create a new user with staff status (is_staff=True).",
+            request_body=CustomUserSerializer,
+            responses={
+                201: openapi.Response(
+                    description='Successfully created staff user',
+                    schema=CustomUserSerializer
+                ),
+                400: openapi.Response(
+                    description='Bad request',
+                    schema=CustomUserSerializer
+                ),
+            },
+            tags=['Staff Management']
+        )
+    @action(
+        detail=False,
+        methods=["POST","GET"],
+    )
+    def staff(self,request):
+        if request.method == "GET":
+            instance = get_user_model().objects.filter(is_staff=True, is_superuser=False)
+            paginator = self.paginator
+            page = paginator.paginate_queryset(instance, request)
+            if page is not None:
+                serializer = CustomUserSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+
+            serializer = CustomUserSerializer(instance, many=True)
+            return Response(serializer.data)
+
+        elif request.method == "POST":
+            serializer = CustomUserCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
+            instance.is_staff= True
+            instance.is_verified=True
+            instance.set_password(serializer.data["password"])
+            instance.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            return Response(
+                status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
+
+
+
+
 
 
     @swagger_auto_schema(
