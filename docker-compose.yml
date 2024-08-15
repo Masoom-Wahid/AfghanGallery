@@ -1,21 +1,16 @@
+version: "3.8"
+
 services:
   web:
-    build: .
-    command: ./start.sh 
+    image: masoomwahid/afghangallery
     volumes:
       - .:/app # Bind mount your Django project folder
       - media:/app/medias # Bind mount for file storage
       - sqlite_data:/app/db # Volume for SQLite database
     ports:
       - "3020:3020"
-    environment:
-      - DATABASE_NAME=sqlite:///app/db/db.sqlite3 # SQLite connection string
-    networks:
-      - webnet
+    command: python manage.py runserver 0.0.0.0:3020
 
 volumes:
   media:
   sqlite_data:
-
-networks:
-  webnet:
