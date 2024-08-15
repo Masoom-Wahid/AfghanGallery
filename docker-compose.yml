@@ -4,13 +4,12 @@ services:
   web:
     image: masoomwahid/afghangallery
     volumes:
-      - .:/app # Bind mount your Django project folder
-      - media:/app/medias # Bind mount for file storage
+      - medias:/app/medias # Bind mount for file storage
       - sqlite_data:/app/db # Volume for SQLite database
     ports:
       - "3020:3020"
     command: ./start.sh
 
 volumes:
-  media:
+  medias:
   sqlite_data:
