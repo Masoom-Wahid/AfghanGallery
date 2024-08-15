@@ -58,7 +58,7 @@ class Vehicle(models.Model):
     warranty = models.BooleanField(default=False)
     swap = models.BooleanField(default=False)
 
-    payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL) 
+    payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -70,7 +70,7 @@ class Vehicle(models.Model):
 
 
 class VehicleImages(models.Model):
-    img = models.FileField(upload_to="vehicles",null=False,blank=False)
+    img = models.FileField(upload_to="vehicle",null=False,blank=False)
     vehice = models.ForeignKey(Vehicle,on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
