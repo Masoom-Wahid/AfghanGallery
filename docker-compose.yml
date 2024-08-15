@@ -9,7 +9,7 @@ services:
       - sqlite_data:/app/db # Volume for SQLite database
     ports:
       - "3020:3020"
-    command: python manage.py runserver 0.0.0.0:3020
+    command: ./start.sh
 
 volumes:
   media:
