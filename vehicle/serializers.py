@@ -37,6 +37,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         return obj.brand.name if obj.brand else None
 
     def get_imgs(self, obj):
-        request = self.context.get('request')
+        # request = self.context.get('request')
         imgs = VehicleImages.objects.filter(vehice=obj.id)
-        return [request.build_absolute_uri(settings.MEDIA_URL + img.img.name) for img in imgs]
+        # return [request.build_absolute_uri(settings.MEDIA_URL + img.img.name) for img in imgs]
+        return [img.img.name for img in imgs]

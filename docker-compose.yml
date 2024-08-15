@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    command: ./start.sh 
+    volumes:
+      - .:/app # Bind mount your Django project folder
+      - media:/app/medias # Bind mount for file storage
+      - sqlite_data:/app/db # Volume for SQLite database
+    ports:
+      - "3020:3020"
+    environment:
+      - DATABASE_NAME=sqlite:///app/db/db.sqlite3 # SQLite connection string
+    networks:
+      - webnet
+
+volumes:
+  media:
+  sqlite_data:
+
+networks:
+  webnet:
