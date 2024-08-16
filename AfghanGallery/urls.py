@@ -10,11 +10,13 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import routers
+from utils.views import Vitrine
 
 router = routers.DefaultRouter()
 router.register(r'users',UserViewSet,basename="users")
 router.register(r'vehicles',VehiceViewSet,basename="vehicles")
 router.register(r'realestates',RealEstateViewSet,basename="realestate")
+router.register(r'vitrine',Vitrine,basename="vitrine")
 
 schema_view = get_schema_view(
    openapi.Info(

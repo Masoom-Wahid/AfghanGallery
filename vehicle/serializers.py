@@ -41,3 +41,21 @@ class VehicleSerializer(serializers.ModelSerializer):
         imgs = VehicleImages.objects.filter(vehice=obj.id)
         # return [request.build_absolute_uri(settings.MEDIA_URL + img.img.name) for img in imgs]
         return [img.img.name for img in imgs]
+
+
+class VitrineVehicleSerializer(serializers.ModelSerializer):
+    img = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    class Meta:
+        model = Vehicle
+        fields = ["name","price","img"]
+
+    def get_name(self,obj):
+        return f"{obj.brand}  {obj.model} {obj.year}"
+
+
+    def get_img(self,obj):
+        first_img = VehicleImages.objects.filter(
+            id=obj.id
+        ).first()
+        return first_img.img.name if first_img else None

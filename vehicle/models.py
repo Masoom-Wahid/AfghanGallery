@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from payment.models import PaymentPlan
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import ExpressionWrapper, F, DurationField,DateTimeField
 
 VEHICLE_TYPES = (
     ("rental","Rental"),
@@ -38,6 +41,32 @@ class VehicleBrand(models.Model):
 
 
 
+class VehicleManager(models.Manager):
+    def vitrine_vehicles(self):
+        """
+            filter all vehicles on if they have payment first
+            if they do have
+            lets check how much time has it passes since
+            meaning
+            created_at + vitrine > today
+        """
+        today = timezone.now()
+        # add another feild to each row which is payment-created_at + virtine
+        vehicles = self.annotate(
+            effective_end_date=ExpressionWrapper(
+                F('payment__created_at') + F('payment__package__vitrine'),
+                output_field=DateTimeField()
+            )
+        )
+
+        # Filter vehicles where the vitrine is greater than or equal to today
+        return vehicles.filter(
+            payment__isnull=False,
+            payment__is_active=True,
+            effective_end_date__gte=today
+        )
+
+
 class Vehicle(models.Model):
     lister = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     description = models.TextField(null=True,blank=True)
@@ -62,6 +91,9 @@ class Vehicle(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+    objects = VehicleManager()
 
 
     def __str__(self) -> str:

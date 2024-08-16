@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from payment.models import PaymentPlan
-
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import ExpressionWrapper, F, DurationField,DateTimeField
 REAL_STATE_CONTRACT_TYPES = [
     ("mortgage","Mortgage"),
     ("on_sale","On Sale"),
@@ -17,6 +19,31 @@ class RealEstateType(models.Model):
     def __str__(self) -> str:
         return self.name
 
+
+class RealEstateManager(models.Manager):
+    def vitrine_real_estate(self):
+        """
+            filter all vehicles on if they have payment first
+            if they do have
+            lets check how much time has it passes since
+            meaning
+            created_at + vitrine > today
+        """
+        today = timezone.now()
+        # add another feild to each row which is payment-created_at + virtine
+        real_estates = self.annotate(
+            effective_end_date=ExpressionWrapper(
+                F('payment__created_at') + F('payment__package__vitrine'),
+                output_field=DateTimeField()
+            )
+        )
+
+        # Filter vehicles where the vitrine is greater than or equal to today
+        return real_estates.filter(
+            payment__isnull=False,
+            payment__is_active=True,
+            effective_end_date__gte=today
+        )
 
 class RealEstate(models.Model):
     lister = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
@@ -43,6 +70,8 @@ class RealEstate(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+    objects = RealEstateManager()
 
     def __str__(self) -> str:
         return self.location
