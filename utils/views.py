@@ -25,7 +25,7 @@ class Vitrine(
     @swagger_auto_schema(
         responses={
             200: openapi.Response(
-                'Successful Response',
+                'Successful ResponsE',
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
