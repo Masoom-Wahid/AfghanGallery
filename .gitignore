@@ -35,6 +35,9 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+old.docker-compose.yml
+old.old.docker-compose.yml
+
 
 # Unit test / coverage reports
 htmlcov/

@@ -39,10 +39,10 @@ class RealEstate(models.Model):
     heater = models.BooleanField(default=False)
     loan_compliance = models.BooleanField(default=False)
     price = models.IntegerField(null=False,blank=False)
-    payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL) 
+    payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
 
     def __str__(self) -> str:
         return self.location
@@ -52,8 +52,9 @@ class RealEstate(models.Model):
 
 class RealEstateImage(models.Model):
     img = models.FileField(upload_to="real_estate",null=False,blank=False)
+    realestate = models.ForeignKey(RealEstate,on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return str(self.id)
+        return str(self.img)

@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  web:
+    image: masoomwahid/afghangallery
+    volumes:
+      - medias:/app/medias # Bind mount for file storage
+      - sqlite_data:/app/db # Volume for SQLite database
+    ports:
+      - "3020:3020"
+    command: ./start.sh
+
+volumes:
+  medias:
+  sqlite_data:

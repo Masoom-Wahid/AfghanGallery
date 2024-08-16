@@ -9,11 +9,13 @@ drf-yasg==1.21.7
 gunicorn==23.0.0
 inflection==0.5.1
 packaging==24.1
+psycopg2-binary==2.9.9
 pycparser==2.22
 PyJWT==2.9.0
 python-dotenv==1.0.1
 pytz==2024.1
 PyYAML==6.0.2
+setuptools==72.2.0
 sqlparse==0.5.1
 typing_extensions==4.12.2
 uritemplate==4.1.1

@@ -30,8 +30,8 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
     def get_permissions(self):
         if self.action == "create":
             return [AllowAny()]
-        elif self.action in  ["update","destroy","upload_tazkira"]:
-            return [IsAuthenticated(),IsOwnerOrAdminOrStaff()]
+        elif self.action in  ["partial_update","destroy","upload_tazkira"]:
+            return [IsOwnerOrAdminOrStaff()]
         elif self.action == "staff":
             return [IsAdmin()]
         return super().get_permissions()
@@ -98,10 +98,18 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
             paginator = self.paginator
             page = paginator.paginate_queryset(instance, request)
             if page is not None:
-                serializer = CustomUserSerializer(page, many=True)
+                serializer = CustomUserSerializer(
+                    page,
+                    many=True,
+                    context={"request":request}
+                )
                 return paginator.get_paginated_response(serializer.data)
 
-            serializer = CustomUserSerializer(instance, many=True)
+            serializer = CustomUserSerializer(
+                instance,
+                many=True,
+                context={"request":request}
+            )
             return Response(serializer.data)
 
         elif request.method == "POST":
@@ -167,9 +175,14 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         )
 
 
-    def update(self, request, pk=None):
+    def partial_update(self, request, pk=None):
         user = self.get_object()
-        serializer = CustomUserSerializer(user, data=request.data, partial=True)
+        serializer = CustomUserSerializer(
+            user,
+            data=request.data,
+            partial=True,
+            context={"request":request}
+        )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

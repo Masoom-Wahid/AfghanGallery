@@ -27,10 +27,18 @@ class IsOwnerOrAdminOrStaff(BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
-        print(f"req is {request.user}")
-        print(f"obj is {obj}")
-        if request.user.is_staff or request.user.is_superuser:
-            return True
+        """
+        a admin can delete whenever and whomever he wants
+        staff can only delete other users and themselves
+        users can only delete themselves
+        """
+        if request.user.is_superuser: return True
+        if request.user.is_staff:
+            if obj.is_staff:
+                return obj == request.user
+            else:
+                return True
+        # he isnt staff nor superuser
         return obj == request.user
 
 
