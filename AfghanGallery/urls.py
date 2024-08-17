@@ -5,7 +5,8 @@ from django.conf.urls.static import static
 from django.urls.conf import include
 from realestate.views import RealEstateViewSet
 from user.views import JwtToken,UserViewSet
-from vehicle.views import VehiceViewSet
+from vehicle.views import VehicleViewSet
+from payment.views import PackagesViewset,PaymentPlanViewSet
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -14,9 +15,11 @@ from utils.views import Vitrine
 
 router = routers.DefaultRouter()
 router.register(r'users',UserViewSet,basename="users")
-router.register(r'vehicles',VehiceViewSet,basename="vehicles")
+router.register(r'vehicles',VehicleViewSet,basename="vehicles")
 router.register(r'realestates',RealEstateViewSet,basename="realestate")
 router.register(r'vitrine',Vitrine,basename="vitrine")
+router.register(r'packages',PackagesViewset,basename="packages")
+router.register(r'payments',PaymentPlanViewSet,basename="payment")
 
 schema_view = get_schema_view(
    openapi.Info(

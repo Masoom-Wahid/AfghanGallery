@@ -19,7 +19,7 @@ GEAR_TYPES = (
 
 
 class VehicleCategory(models.Model):
-    name = models.CharField(max_length=255,null=False,blank=False)
+    name = models.CharField(max_length=255,null=False,blank=False,unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -30,7 +30,7 @@ class VehicleCategory(models.Model):
 
 
 class VehicleBrand(models.Model):
-    name  = models.CharField(max_length=255,null=False,blank=False)
+    name  = models.CharField(max_length=255,null=False,blank=False,unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -87,6 +87,10 @@ class Vehicle(models.Model):
     warranty = models.BooleanField(default=False)
     swap = models.BooleanField(default=False)
 
+
+    plate_no = models.IntegerField(null=False,blank=False,unique=True)
+    plate_model = models.SmallIntegerField(null=False,blank=False,db_index=True)
+
     payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,7 +101,7 @@ class Vehicle(models.Model):
 
 
     def __str__(self) -> str:
-        return self.model
+        return f"{self.brand} {self.model} {self.year}"
 
 
 

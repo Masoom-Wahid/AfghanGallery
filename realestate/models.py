@@ -12,7 +12,7 @@ REAL_STATE_CONTRACT_TYPES = [
 
 
 class RealEstateType(models.Model):
-    name = models.CharField(max_length=40,null=False,blank=False)
+    name = models.CharField(max_length=40,null=False,blank=False,unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

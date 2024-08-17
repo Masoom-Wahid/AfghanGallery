@@ -16,8 +16,8 @@ PRODUCT_TYPES = [
 class UserFavs(models.Model):
     user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     type = models.CharField(max_length=50,choices=PRODUCT_TYPES,null=False,blank=False)
-    vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE)
-    real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE)
+    vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE,null=True,blank=True)
+    real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
  
@@ -30,8 +30,8 @@ class UserFavs(models.Model):
 class UserHistory(models.Model):
     type = models.CharField(max_length=50,choices=PRODUCT_TYPES,null=False,blank=False)
     user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE)
-    real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE)
+    vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE,null=True,blank=True)
+    real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
