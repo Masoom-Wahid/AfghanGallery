@@ -39,7 +39,7 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
 
-    tazkira = models.FileField(upload_to="tazkira",null=True,blank=True)
+    tazkira = models.ImageField(upload_to="tazkira",null=True,blank=True)
 
     class Meta:
         swappable = "AUTH_USER_MODEL"
@@ -66,6 +66,10 @@ class Room(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+    class Meta:
+        unique_together = ('user1','user2')
 
     def __str__(self) -> str:
         return f"{self.user1.email} => {self.user2.email}"

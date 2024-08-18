@@ -13,6 +13,7 @@ PRODUCT_TYPES = [
 
 
 
+
 class UserFavs(models.Model):
     user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     type = models.CharField(max_length=50,choices=PRODUCT_TYPES,null=False,blank=False)
@@ -20,11 +21,27 @@ class UserFavs(models.Model):
     real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
- 
+
     def __str__(self) -> str:
         return f"{self.user.email} => {self.type}"
 
 
+
+class UserNotifications(models.Model):
+    """
+    since the noficiations are only about fav products i am gonna only store the
+    user_fav id
+    """
+    user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    msg = models.CharField(max_length=100,blank=False,null=False)
+    fav = models.ForeignKey(UserFavs,on_delete=models.CASCADE,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self) -> str:
+        return f""
+    # link = models.Url
 
 
 class UserHistory(models.Model):
@@ -35,6 +52,6 @@ class UserHistory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
- 
+
     def __str__(self) -> str:
         return f"{self.user.email} => {self.type}"

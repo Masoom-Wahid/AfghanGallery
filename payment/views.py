@@ -106,16 +106,6 @@ class PaymentPlanViewSet(
             )
 
 
-        user_payment_plan = PaymentPlan.objects.filter(
-            user=user
-        ).order_by('-created_at').first()
-
-        # just to make sure if the user has a payment plan
-        # other wise we are just hitting a null -> null value
-        if user_payment_plan:
-            user_payment_plan.is_active = False
-            user_payment_plan.save()
-
         instance = PaymentPlan.objects.create(
             package=package,
             user=user

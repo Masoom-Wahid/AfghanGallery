@@ -12,7 +12,7 @@ from user_info.models import UserHistory
 from rest_framework.views import status
 from .serializers import VehicleCreationSerializer, VehicleSerializer
 from drf_yasg import openapi
-
+from payment.models import PaymentPlan
 
 
 class VehicleViewSet(
@@ -44,20 +44,85 @@ class VehicleViewSet(
 
 
 
-    """
-        VEHICLE CRUD
-        C done
-        filter read missing
-        R done
-        U update done
-        D delete done
-        upload_imgs done
-        retreive -> AllowAny
-        create -> UserOnly
-        update,patch -> admin,staff,owner
 
 
+    # def boost_vehicle(self,request):
+    #     # TODO: what if for some reason the user had 2 active payment plans ?
+    #     # i think getting the latest active would be a better plan
+    #     # maybe the network was bad or we had an error , so there is not gurantee
+    #     # that the user will only have 1 active payment plan per time
+
+    #     try:
+    #         payment_instance = Payment.objects.get(
+    #                 is_active=True,
+    #                 user=request.user
+    #         )
+    #     except Exception as e:
+    #         return Response({
+
+    #         },
+    #         status=status.HTTP_400_BAD_REQUEST
+    #         )
+
+    #     product = Vehicle.objects.get(
+    #             pk=request.data.get("vehicle")
+    #     )
+    #     if not payment_instance or not payment_instance.is_active:
+    #         return Response(
+    #                 {
+    #                     "detail" : "no active payment plan",
+    #                 },
+    #             status=HTTP_400_BAD_REQUEST
+    #         )
+
+
+    #     count_of_vehicles = Vehicle.objects.filter(
+    #             payment_plan=payment_instance
+    #     ).count()
+
+    #     count_of_realestate = Vehicle.objects.filter(
+    #             payment_plan=payment_instance
+    #     ).count()
+
+
+    #     # TODO: also count the time , check if the time of the plan has gone down if so
+    #     # just make the is_active = False , so that u dont have to bother anymore
+    #     if count_of_realestate + count_of_vehicles >= payment_plan.package.nums_of_ads:
+    #         return Response(
+    #                 {
+    #                     "detail" : "max number of ads reached"
+    #                 },
+    #                 status=status.HTTP_400_BAD_REQUEST
+    #         )
+    #     else:
+    #         product.payment_plan =  payment_instance
+    #         product.save()
+    #         return Response(
+    #                 status=status.HTTP_204_NO_CONTENT
+    #         )
+
+
+
+
+
+
+
+
+
+
+
     """
+            VEHICLE CRUD
+            C done
+            filter read missing
+            R done
+            U update done
+            D delete done
+            upload_imgs done
+            retreive -> AllowAny
+            create -> UserOnly
+            update,patch -> admin,staff,owner
+        """
 
 
     def destroy(self, request, pk=None):
@@ -109,7 +174,7 @@ class VehicleViewSet(
         methods=["POST"],
         parser_classes=[MultiPartParser,FormParser],
         url_path='(?P<pk>\d+)/upload',
-        url_name="Upload Vehicle images Url",
+        url_name="Upload RealEstate images Url",
         filter_backends=[],
         serializer_class=None,
     )
@@ -124,7 +189,7 @@ class VehicleViewSet(
         for img in imgs:
             VehicleImages.objects.create(
                 img = img,
-                vehice = instance
+                vehicle = instance
             )
 
         return Response(
@@ -190,7 +255,7 @@ class VehicleViewSet(
         instance = serializer.save()
         VehicleImages.objects.create(
             img = img,
-            vehice=instance
+            vehicle=instance
         )
 
         return Response(

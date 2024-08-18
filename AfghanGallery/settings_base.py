@@ -23,7 +23,8 @@ INSTALLED_APPS = [
     "payment",
     "vehicle",
     "realestate",
-    "user_info"
+    "user_info",
+    "django_cleanup.apps.CleanupConfig"
 ]
 
 MIDDLEWARE = [

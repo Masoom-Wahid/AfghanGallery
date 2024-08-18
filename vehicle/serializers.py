@@ -1,7 +1,7 @@
 from django.core.serializers.base import SerializationError
 from django.utils import timezone
 from rest_framework import serializers
-from .models import Vehicle, VehicleBrand, VehicleCategory,VehicleImages
+from .models import Vehicle,VehicleImages
 from django.urls import reverse
 from django.conf import settings
 
@@ -40,14 +40,12 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     def get_imgs(self, obj):
         # request = self.context.get('request')
-        imgs = VehicleImages.objects.filter(vehice=obj.id)
+        imgs = VehicleImages.objects.filter(vehicle=obj.id)
         # return [request.build_absolute_uri(settings.MEDIA_URL + img.img.name) for img in imgs]
         return [img.img.name for img in imgs]
 
 
 class VehicleCreationSerializer(serializers.ModelSerializer):
-    brand = serializers.CharField(required=False)
-    category = serializers.CharField(required=False)
     class Meta:
         model = Vehicle
         exclude= ["created_at","updated_at","payment"]
@@ -69,11 +67,6 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Km can not be negative ")
         return value
 
-    def validate_brand(self,value):
-        return value
-
-    def validate_category(self,value):
-        return value
 
     def validate_plate_no(self,value):
         if value < 0 or value > 99999:
@@ -84,30 +77,6 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
         if value < 0 or value > 7:
            raise serializers.ValidationError("Plate model cannot be lower than 0 or higher than 7")
         return value
-
-    def create(self,validated_data):
-        categ_name = validated_data.pop("category","")
-        brand_name = validated_data.pop("brand","")
-
-
-
-        if categ_name != "":
-            categ = VehicleCategory.objects.get_or_create(
-                name = categ_name
-            )
-
-        if brand_name != "":
-            brand = VehicleBrand.objects.get_or_create(
-                name = brand_name
-            )
-
-
-        vehicle = Vehicle.objects.create(
-            category = categ[0] if categ_name else None,
-            brand = brand[0] if brand_name else None,
-            **validated_data
-        )
-        return vehicle
 
 
     def get_fields(self):

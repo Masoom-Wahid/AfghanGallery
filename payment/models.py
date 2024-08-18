@@ -20,10 +20,13 @@ class Packages(models.Model):
 class PaymentPlan(models.Model):
     package = models.ForeignKey(Packages,on_delete=models.PROTECT)
     user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True,db_index=True)
+    # is_active = models.BooleanField(default=True,db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    # normalization or wtv , this is the easy route
+    # although using .count() would be better but i dont want to count the rows every time
+    # so who knows which one is better
+    num_of_products = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return f"{self.user.email} == {self.package.name}"
