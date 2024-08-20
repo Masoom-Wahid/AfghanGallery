@@ -122,6 +122,13 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// for some whatever reason if u want to talk to urself
+	// we aint allowing that lol
+	if user.ID == other_user.ID {
+		writeResponse("Schizophrenia", "bro has no one to talk to", w)
+		return
+	}
+
 	room_id, err := get_room(user.ID, other_user.ID)
 	if err != nil {
 		room_id, err = create_room(user.ID, other_user.ID)

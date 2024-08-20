@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.db.utils import IntegrityError as DjangoIntegrityError
 
+from user.models import Room
+
 
 class CustomUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -56,3 +58,20 @@ class AuthSerializerClass(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ['email', 'password']
+
+
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    user1_email = serializers.SerializerMethodField()
+    user2_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Room
+        fields = '__all__'
+
+    def get_user1_email(self,obj):
+        return obj.user1.email
+
+    def get_user2_email(self,obj):
+        return obj.user2.email

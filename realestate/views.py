@@ -1,18 +1,20 @@
+from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from user.perms import IsAuthenticated
+from user_info.models import UserFavs
 from .perms import IsRealEstateOwner, IsRealEstateOwnerOrIsAdminOrStaff
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin,RetrieveModelMixin, UpdateModelMixin
 from .models import RealEstate,RealEstateImage
-from user_info.models import UserHistory
 from rest_framework.views import status
 from .serializers import RealEstateCreationSerializer, RealEstateSerializer
 from drf_yasg import openapi
-
+from utils.tasks import scheduler
+from utils.notifs import update_notifs
 
 class RealEstateViewSet(
     ListModelMixin,
@@ -33,7 +35,7 @@ class RealEstateViewSet(
 
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ["create","fav_a_realestate"]:
             return [IsAuthenticated()]
         elif self.action in ["update","destroy","patch"]:
             return [IsRealEstateOwnerOrIsAdminOrStaff()]
@@ -127,13 +129,28 @@ class RealEstateViewSet(
 
     def update(self, request, *args, **kwargs):
         realestate = self.get_object()
+        last_price = realestate.price
         serializer = RealEstateCreationSerializer(
             realestate,
             data=request.data,
             context={"request":request}
         )
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            instance = serializer.save()
+
+            if request.data.get("price",None):
+                scheduler.add_job(
+                        update_notifs,
+                        args=[
+                            instance,
+                            instance.price,
+                            last_price,
+                            "vehicle"
+                        ],
+                        trigger="date",
+                        run_date=timezone.now()
+                )
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -141,6 +158,7 @@ class RealEstateViewSet(
 
     def partial_update(self, request, pk=None):
         realestate = self.get_object()
+        last_price = realestate.price
         serializer = RealEstateCreationSerializer(
             realestate,
             data=request.data,
@@ -148,7 +166,24 @@ class RealEstateViewSet(
             context={"request":request}
         )
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            instance = serializer.save()
+
+            if request.data.get("price"):
+                scheduler.add_job(
+                        update_notifs,
+                        args=[
+                            instance,
+                            instance.price,
+                            last_price,
+                            "vehicle"
+                        ],
+                        trigger="date",
+                        run_date=timezone.now()
+                )
+
+
+
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -202,3 +237,23 @@ class RealEstateViewSet(
 
         serializer = RealEstateSerializer(instance)
         return Response(serializer.data)
+
+
+    @action(
+        detail=False,
+        methods=["POST"],
+        url_path='(?P<pk>\d+)/fav',
+        url_name="Add a vehicle to favs",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def fav_a_realestate(self,request,pk=None):
+        instance = self.get_object()
+        UserFavs.objects.create(
+                user=request.user,
+                type="vehicle",
+                vehicle=instance
+        )
+        return Response(
+                status=status.HTTP_204_NO_CONTENT
+        ) 
