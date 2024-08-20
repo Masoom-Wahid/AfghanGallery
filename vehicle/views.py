@@ -7,16 +7,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from user.perms import IsAuthenticated
 from .perms import IsVehicleOwner, IsVehicleOwnerOrIsAdminOrStaff
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin,RetrieveModelMixin, UpdateModelMixin
 from .models import Vehicle, VehicleImages
-from user_info.models import UserHistory
+from user_info.models import UserFavs, UserHistory
 from rest_framework.views import status
 from .serializers import VehicleCreationSerializer, VehicleSerializer
 from drf_yasg import openapi
 from payment.models import PaymentPlan
-
-
+from utils.tasks import scheduler
+from utils.notifs import update_notifs
 class VehicleViewSet(
     CreateModelMixin,
     ListModelMixin,
@@ -36,7 +36,7 @@ class VehicleViewSet(
 
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ["create","fav_a_vehicle"]:
             return [IsAuthenticated()]
         elif self.action in ["update","destroy","patch"]:
             return [IsVehicleOwnerOrIsAdminOrStaff()]
@@ -78,60 +78,6 @@ class VehicleViewSet(
             return Response(
                     status=status.HTTP_204_NO_CONTENT
             )
-    # def boost_vehicle(self,request):
-    #     # TODO: what if for some reason the user had 2 active payment plans ?
-    #     # i think getting the latest active would be a better plan
-    #     # maybe the network was bad or we had an error , so there is not gurantee
-    #     # that the user will only have 1 active payment plan per time
-
-    #     try:
-    #         payment_instance = Payment.objects.get(
-    #                 is_active=True,
-    #                 user=request.user
-    #         )
-    #     except Exception as e:
-    #         return Response({
-
-    #         },
-    #         status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     product = Vehicle.objects.get(
-    #             pk=request.data.get("vehicle")
-    #     )
-    #     if not payment_instance or not payment_instance.is_active:
-    #         return Response(
-    #                 {
-    #                     "detail" : "no active payment plan",
-    #                 },
-    #             status=HTTP_400_BAD_REQUEST
-    #         )
-
-
-    #     count_of_vehicles = Vehicle.objects.filter(
-    #             payment_plan=payment_instance
-    #     ).count()
-
-    #     count_of_realestate = Vehicle.objects.filter(
-    #             payment_plan=payment_instance
-    #     ).count()
-
-
-    #     # TODO: also count the time , check if the time of the plan has gone down if so
-    #     # just make the is_active = False , so that u dont have to bother anymore
-    #     if count_of_realestate + count_of_vehicles >= payment_plan.package.nums_of_ads:
-    #         return Response(
-    #                 {
-    #                     "detail" : "max number of ads reached"
-    #                 },
-    #                 status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     else:
-    #         product.payment_plan =  payment_instance
-    #         product.save()
-    #         return Response(
-    #                 status=status.HTTP_204_NO_CONTENT
-    #         )
 
 
 
@@ -139,22 +85,6 @@ class VehicleViewSet(
 
 
 
-
-
-
-
-    """
-            VEHICLE CRUD
-            C done
-            filter read missing
-            R done
-            U update done
-            D delete done
-            upload_imgs done
-            retreive -> AllowAny
-            create -> UserOnly
-            update,patch -> admin,staff,owner
-        """
 
 
     def destroy(self, request, pk=None):
@@ -229,23 +159,62 @@ class VehicleViewSet(
         )
 
 
+    @action(
+        detail=False,
+        methods=["POST"],
+        url_path='(?P<pk>\d+)/fav',
+        url_name="Add a vehicle to favs",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def fav_a_vehicle(self,request,pk=None):
+        instance = self.get_object()
+        UserFavs.objects.create(
+                user=request.user,
+                type="vehicle",
+                vehicle=instance
+        )
+        return Response(
+                status=status.HTTP_204_NO_CONTENT
+        )
+
+
+
 
     def update(self, request, *args, **kwargs):
         vehicle = self.get_object()
+        last_price = vehicle.price
         serializer = VehicleCreationSerializer(
             vehicle,
             data=request.data,
             context={"request":request}
         )
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            instance = serializer.save()
+            
+
+            if request.data.get("price",None):
+                scheduler.add_job(
+                    update_notifs,
+                    args=[
+                        instance,
+                        instance.price,
+                        last_price,
+                        "vehicle"
+                    ],
+                    trigger="date",
+                    run_date=timezone.now(),
+                )            
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+    
+
 
     def partial_update(self, request, pk=None):
         vehicle = self.get_object()
+        last_price : int = vehicle.price
         serializer = VehicleCreationSerializer(
             vehicle,
             data=request.data,
@@ -253,7 +222,20 @@ class VehicleViewSet(
             context={"request":request}
         )
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            instance = serializer.save()
+            if request.data.get("price",None):
+                scheduler.add_job(
+                    update_notifs,
+                    args=[
+                        instance,
+                        instance.price,
+                        last_price,
+                        "vehicle"
+                    ],
+                    trigger="date",
+                    run_date=timezone.now(),
+                )              
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -1,16 +1,18 @@
-from rest_framework.decorators import action, parser_classes
-from rest_framework.request import Request
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+
+from user_info.models import UserFavs, UserNotifications
+from user_info.serializers import UserFavsSerializer, UserNotifsSerializer
+from .perms import IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
 from payment.serializers import PaymentPlanSerializer 
-from user import paginations
 from .token_factory import create_token
 from .serializers import (
     CustomUserSerializer,
     CustomUserCreateSerializer,
-    AuthSerializerClass
+    RoomSerializer
 )
 from django.shortcuts import get_object_or_404
 from .perms import IsOwnerOrAdminOrStaff,IsAdmin
@@ -20,9 +22,8 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .paginations import StaffPagination
-from rest_framework.pagination import PageNumberPagination
 from payment.models import PaymentPlan 
+from .models import Room
 
 
 class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericViewSet):
@@ -33,6 +34,8 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
     def get_permissions(self):
         if self.action == "create":
             return [AllowAny()]
+        elif self.action in ["chats","notifs","favs"]:
+            return [IsAuthenticated()]
         elif self.action in  [
             "partial_update",
             "destroy",
@@ -262,10 +265,48 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(
+            detail=False,
+            methods=["GET"]
+    )
+    def chats(self,request):
+        instance = Room.objects.filter(
+            Q(user1=request.user.id) | Q(user2=request.user.id)
+        )
+        serializer = RoomSerializer(
+                instance,
+                many=True
+        )
 
+        return Response(
+                serializer.data
+        )
+        
 
+    @action(
+            detail=False,
+            methods=["GET"]
+    )
+    def notifs(self,request):
+        instance = UserNotifications.objects.filter(
+                user=request.user
+        )
 
+        serializer = UserNotifsSerializer(
+                instance
+        )
 
+        return Response(serializer.data)
+
+    @action(detail=False,methods=["GET"])
+    def favs(self,request):
+        instance = UserFavs.objects.filter(
+                user=request.user
+        )
+        serializer = UserFavsSerializer(instance)
+        return Response(
+                serializer.data
+        )
 
 
 class JwtToken(APIView):
