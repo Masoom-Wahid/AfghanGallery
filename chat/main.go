@@ -145,13 +145,24 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		get the prev msgs from the db first and then handle the msgs which are in redis
 		and then send them all
 	*/
-	prev_msgs, _ := get_msgs_of_room(room)
+	prev_msgs, prev_msgs_err := get_msgs_of_room(room)
+	did_send_data := false
 	roomMutex.Lock()
 	if roomConnections[room] > 0 {
 		redis_msgs := get_msgs_from_redis(room)
-		prev_msgs = append(prev_msgs, redis_msgs...)
+		// if we couldnt get the prev data or other there was none , just send the redis data
+		// else append the redis msgs so we can send them total
+		if prev_msgs_err != nil || prev_msgs == nil {
+			conn.WriteJSON(redis_msgs)
+			did_send_data = true
+		} else {
+			prev_msgs = append(prev_msgs, redis_msgs...)
+		}
 	}
-	conn.WriteJSON(prev_msgs)
+
+	if !did_send_data {
+		conn.WriteJSON(prev_msgs)
+	}
 	roomConnections[room]++
 	roomMutex.Unlock()
 

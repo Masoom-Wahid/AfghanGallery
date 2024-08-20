@@ -115,10 +115,10 @@ func get_room(user1, user2 int) (int, error) {
 
 func get_msgs_of_room(roomID string) ([]Message, error) {
 	stmt := `
-		SELECT msg,sender_id,receiver_id,created_at,updated_at
+		SELECT msg,sender_id,receiver_id,created_at
 		FROM user_message
 		WHERE room_id_id = ?
-		ORDER_BY created_at DESC
+		ORDER BY created_at DESC
 	`
 
 	rows, err := DB.Query(stmt, roomID)
