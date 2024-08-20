@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -41,15 +40,20 @@ func Init(
 	)
 }
 
-func writeResponse(from string, detail string, w http.ResponseWriter) {
-	response := map[string]string{
-		"from":   from,
-		"detail": detail,
-	}
-	w.WriteHeader(http.StatusBadRequest)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to write JSON response: %v", err)
-	}
-	return
+func writeResponse(from string, detail string, _ http.ResponseWriter) {
+	// Cant write response
+	fmt.Printf("here with from %s\nand detail %s\n", from, detail)
+	// response := map[string]string{
+	// 	"from":   from,
+	// 	"detail": detail,
+	// }
+
+	// // Set the status code and content type
+	// w.WriteHeader(http.StatusBadRequest)
+	// w.Header().Set("Content-Type", "application/json")
+
+	// // Write the JSON response
+	// if err := json.NewEncoder(w).Encode(response); err != nil {
+	// 	log.Printf("Failed to write JSON response: %v", err)
+	// }
 }
