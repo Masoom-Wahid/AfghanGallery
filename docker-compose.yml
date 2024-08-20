@@ -1,15 +1,37 @@
-version: "3.8"
-
 services:
   web:
     image: masoomwahid/afghangallery
     volumes:
-      - medias:/app/medias # Bind mount for file storage
-      - sqlite_data:/app/db # Volume for SQLite database
+      - ./medias:/app/medias # Bind mount for file storage
+      - ./sqlite.db:/app/db.sqlite3 # Bind mount for SQLite database
     ports:
       - "3020:3020"
     command: ./start.sh
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+
+  chat:
+    image: masoomwahid/afghangallerychat
+    ports:
+      - "3021:3021"
+    volumes:
+      - ./sqlite.db:/usr/src/app/db.sqlite3
+      - ./.golang.env:/usr/src/app/.env
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_PATH=./db.sqlite3
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - PORT=3021
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
 
 volumes:
   medias:
-  sqlite_data:
+  redis-data:

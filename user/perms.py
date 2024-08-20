@@ -17,6 +17,10 @@ class IsAdminOrStaff(BasePermission):
         if request.user == None : return False
         return bool(request.user.is_staff or request.user.is_superuser)
 
+class IsAuthenticated(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_verified)
+
 
 class IsOwnerOrAdminOrStaff(BasePermission):
     def has_permission(self, request, view):

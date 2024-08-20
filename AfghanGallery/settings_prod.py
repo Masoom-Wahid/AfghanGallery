@@ -6,6 +6,9 @@ JWT_EXPIRATION_TIME = 172800
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALLOWED_HOSTS = ["127.0.0.1"]
 allowed_hosts = []
+CSRF_TRUSTED_ORIGINS = [
+    'https://afghangallery.mehdiwahid.dev'
+]
 for host in os.getenv("ALLOWED_HOST","").split(","):
     allowed_hosts.append(host)
 

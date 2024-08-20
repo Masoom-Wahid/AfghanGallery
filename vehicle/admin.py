@@ -1,7 +1,5 @@
 from django.contrib import admin
-from .models import VehicleCategory,Vehicle,VehicleBrand,VehicleImages
+from .models import Vehicle,VehicleImages
 
 admin.site.register(Vehicle)
-admin.site.register(VehicleBrand)
 admin.site.register(VehicleImages)
-admin.site.register(VehicleCategory)

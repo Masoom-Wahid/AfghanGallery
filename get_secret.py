@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
+from secrets import token_hex
 
 
-from django.core.management.utils import get_random_secret_key  
-print(get_random_secret_key())
+print(token_hex(25))

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
+from payment.serializers import PaymentPlanSerializer 
 from user import paginations
 from .token_factory import create_token
 from .serializers import (
@@ -21,6 +22,8 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .paginations import StaffPagination
 from rest_framework.pagination import PageNumberPagination
+from payment.models import PaymentPlan 
+
 
 class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericViewSet):
     queryset = get_user_model().objects.all()
@@ -30,7 +33,12 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
     def get_permissions(self):
         if self.action == "create":
             return [AllowAny()]
-        elif self.action in  ["partial_update","destroy","upload_tazkira"]:
+        elif self.action in  [
+            "partial_update",
+            "destroy",
+            "upload_tazkira",
+            "payment_history"
+        ]:
             return [IsOwnerOrAdminOrStaff()]
         elif self.action == "staff":
             return [IsAdmin()]
@@ -45,6 +53,66 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         instance.save()
         token = create_token(instance)
         return Response({"token": token}, status=status.HTTP_201_CREATED)
+
+
+    """
+    @swagger_auto_schema(
+            methods=["get"],
+            operation_id="payment_history_list",
+            summary="Retrieve a list user's payment history",
+            description="Retrieve a list user's payment history.",
+            responses={
+                200: openapi.Response(
+                    description='A list of staff users',
+                    schema=PaymentPlanSerializer
+                ),
+                400: openapi.Response(
+                    description='Bad request',
+                    schema=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message'),
+                        }
+                    )
+                ),
+                404: openapi.Response(
+                    description='Invalid User',
+                    schema=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message'),
+                        }
+                    )
+                ),
+            },
+            tags=['Payment History']
+        )
+    """
+    @action(
+        detail=False,
+        methods=["GET"],
+        url_path="payment_history",
+        url_name="Get user's payment history",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def payment_history(self,request):
+        instance= self.get_object()
+
+        payments = PaymentPlan.objects.filter(
+            user = instance
+        )
+
+        serializer = PaymentPlanSerializer(
+            payments,
+            many=True
+        )
+
+        return Response(
+            serializer.data
+        )
+
+
 
 
 

@@ -20,6 +20,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_verified',True)
         return self.create_user(email, password, **extra_fields)
 
 
@@ -39,7 +40,7 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
 
-    tazkira = models.FileField(upload_to="tazkira",null=True,blank=True)
+    tazkira = models.ImageField(upload_to="tazkira",null=True,blank=True)
 
     class Meta:
         swappable = "AUTH_USER_MODEL"
@@ -67,6 +68,11 @@ class Room(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user1', 'user2'], name='unique_room_users')
+        ]
     def __str__(self) -> str:
         return f"{self.user1.email} => {self.user2.email}"
 

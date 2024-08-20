@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - dev
-    paths-ignore:
+    paths:
       - chat/**
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -25,8 +26,8 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -t masoomwahid/afghangallery:latest .
-          docker push masoomwahid/afghangallery:latest
+          docker build -t masoomwahid/afghangallerychat:latest ./chat
+          docker push masoomwahid/afghangallerychat:latest
 
       - name: reload the server in vps
         uses: appleboy/ssh-action@v1.0.3
