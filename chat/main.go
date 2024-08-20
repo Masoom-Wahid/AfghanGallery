@@ -98,25 +98,25 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	other_email := r.URL.Query().Get("email")
 	if token == "" || other_email == "" {
-		http.Error(w, "token and email required", http.StatusBadRequest)
+		writeResponse("no token and email", "token and email required", w)
 		return
 	}
 	user_email, err := ParseToken(token)
 	if err != nil {
-		http.Error(w, "valid token", http.StatusBadRequest)
+		writeResponse("can't parse token", "no valid token", w)
 		return
 	}
 
 	user, err := get_user_instance(user_email)
 	// if no user or some err or is not verified then we do not want them talk
 	if user == nil || err != nil || !user.Verified {
-		http.Error(w, "invalid token", http.StatusBadRequest)
+		writeResponse("the first user isnt real", "invalid token info", w)
 		return
 	}
 
 	other_user, err := get_user_instance(other_email)
 	if other_user == nil || err != nil {
-		http.Error(w, "invalid other user", http.StatusBadRequest)
+		writeResponse("the second user isnt real", "invalid token info", w)
 		return
 	}
 
@@ -124,7 +124,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		room_id, err = create_room(user.ID, other_user.ID)
 		if err != nil {
-			http.Error(w, "Something happened", http.StatusServiceUnavailable)
+			writeResponse("couldnt create a room", "err when creating a room", w)
 			return
 		}
 	}

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -37,4 +39,17 @@ func Init(
 	InitDB(
 		DB_path,
 	)
+}
+
+func writeResponse(from string, detail string, w http.ResponseWriter) {
+	response := map[string]string{
+		"from":   from,
+		"detail": detail,
+	}
+	w.WriteHeader(http.StatusBadRequest)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to write JSON response: %v", err)
+	}
+	return
 }
