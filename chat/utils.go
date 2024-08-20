@@ -45,7 +45,9 @@ func Init(
 
 func writeResponse(from string, detail string, _ http.ResponseWriter) {
 	// Cant write response
-	fmt.Printf("here with from %s\nand detail %s\n", from, detail)
+	if debug == "TRUE" {
+		fmt.Printf("here with from %s\nand detail %s\n", from, detail)
+	}
 	// response := map[string]string{
 	// 	"from":   from,
 	// 	"detail": detail,

@@ -15,7 +15,8 @@ services:
     ports:
       - "3021:3021"
     volumes:
-      - ./sqlite.db:/app/db.sqlite3
+      - ./sqlite.db:/usr/src/app/db.sqlite3
+      - ./.golang.env:/usr/src/app/.env
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DB_PATH=./db.sqlite3

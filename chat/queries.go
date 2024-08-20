@@ -71,10 +71,8 @@ func get_user_instance(email string) (*User, error) {
 	var user User
 	err := row.Scan(&user.ID, &user.Email, &user.Verified)
 	if err == sql.ErrNoRows {
-		println(err.Error())
 		return nil, nil
 	} else if err != nil {
-		println(err.Error())
 		// Error occurred while querying the database
 		return nil, err
 	}

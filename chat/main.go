@@ -19,6 +19,7 @@ var (
 	// an HTTP to websocket upgrade
 	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	ctx      = context.Background()
+	debug    string
 	// Tracks active connections per room
 	roomConnections = make(map[string]int)
 	// To ensure thread-safe operations on roomConnections
@@ -36,6 +37,7 @@ func main() {
 		log.Fatalf("SECRET_KEY required")
 	}
 	secret_key = []byte(secret_key_var)
+	debug = os.Getenv("DEBUG")
 	Init(
 		os.Getenv("DB_PATH"),
 		os.Getenv("REDIS_HOST"),
@@ -139,14 +141,17 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	pubsub := redisClient.Subscribe(ctx, room)
 	defer pubsub.Close()
 
+	/*
+		get the prev msgs from the db first and then handle the msgs which are in redis
+		and then send them all
+	*/
+	prev_msgs, _ := get_msgs_of_room(room)
 	roomMutex.Lock()
 	if roomConnections[room] > 0 {
-		// idk what to do with this err instead of just printing it
-		db_msgs, _ := get_msgs_of_room(room)
-		msgs := get_msgs_from_redis(room)
-		all_msgs := append(db_msgs, msgs...)
-		conn.WriteJSON(all_msgs)
+		redis_msgs := get_msgs_from_redis(room)
+		prev_msgs = append(prev_msgs, redis_msgs...)
 	}
+	conn.WriteJSON(prev_msgs)
 	roomConnections[room]++
 	roomMutex.Unlock()
 
