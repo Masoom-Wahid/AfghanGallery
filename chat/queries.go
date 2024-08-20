@@ -71,8 +71,10 @@ func get_user_instance(email string) (*User, error) {
 	var user User
 	err := row.Scan(&user.ID, &user.Email, &user.Verified)
 	if err == sql.ErrNoRows {
+		println(err.Error())
 		return nil, nil
 	} else if err != nil {
+		println(err.Error())
 		// Error occurred while querying the database
 		return nil, err
 	}
@@ -97,8 +99,8 @@ func create_room(user1, user2 int) (int, error) {
 
 func get_room(user1, user2 int) (int, error) {
 	sqlstmt := `
-			SELECT id 
-			FROM user_room 
+			SELECT id
+			FROM user_room
 			WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
 		`
 	row := DB.QueryRow(sqlstmt, user1, user2, user2, user1)
@@ -117,7 +119,7 @@ func get_msgs_of_room(roomID string) ([]Message, error) {
 	stmt := `
 		SELECT msg,sender_id,receiver_id,created_at,updated_at
 		FROM user_message
-		WHERE room_id_id = ?	
+		WHERE room_id_id = ?
 		ORDER_BY created_at DESC
 	`
 

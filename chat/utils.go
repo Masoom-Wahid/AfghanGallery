@@ -35,9 +35,12 @@ func Init(
 		Redis_port,
 		Redis_password,
 	)
+	println("redis initited")
+
 	InitDB(
 		DB_path,
 	)
+	println("Database initiaed")
 }
 
 func writeResponse(from string, detail string, _ http.ResponseWriter) {
