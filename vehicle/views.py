@@ -1,3 +1,5 @@
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
@@ -38,14 +40,44 @@ class VehicleViewSet(
             return [IsAuthenticated()]
         elif self.action in ["update","destroy","patch"]:
             return [IsVehicleOwnerOrIsAdminOrStaff()]
-        elif self.action == "upload_img":
+        elif self.action in ["upload_img","boost_vehicle"]:
             return [IsVehicleOwner()]
         return [AllowAny()]
 
 
 
+    @action(
+        methods=["POST"],
+        detail=False,
+        url_path='(?P<pk>\d+)/boost',
+        url_name="Boost a particular vehicle",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def boost_vehicle(self,request,pk=None):
+        instance : Vehicle = self.get_object()
+        payment_plan : PaymentPlan = get_object_or_404(
+            PaymentPlan,
+            pk=request.data.get("payment_plan"),
+            user=request.user
+        )
 
-
+        if payment_plan.num_of_products >= payment_plan.package.num_of_ads:
+            return Response(
+                    {
+                        "detail" : "max of this package used"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            payment_plan.num_of_products += 1
+            instance.payment = payment_plan  
+            instance.payment_plan_activation_date = timezone.now()
+            instance.save()
+            payment_plan.save()
+            return Response(
+                    status=status.HTTP_204_NO_CONTENT
+            )
     # def boost_vehicle(self,request):
     #     # TODO: what if for some reason the user had 2 active payment plans ?
     #     # i think getting the latest active would be a better plan

@@ -20,6 +20,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_verified',True)
         return self.create_user(email, password, **extra_fields)
 
 
@@ -69,8 +70,9 @@ class Room(models.Model):
 
 
     class Meta:
-        unique_together = ('user1','user2')
-
+        constraints = [
+            models.UniqueConstraint(fields=['user1', 'user2'], name='unique_room_users')
+        ]
     def __str__(self) -> str:
         return f"{self.user1.email} => {self.user2.email}"
 

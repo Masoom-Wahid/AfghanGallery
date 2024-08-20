@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import Packages, PaymentHistory,PaymentPlan
+from .models import Packages,PaymentPlan
 
 class PackagesSerializer(serializers.ModelSerializer):
    class Meta:
       model = Packages
-      fields = "__all__"
+      exclude = ["is_valid"]
 
 
 class PaymentPlanSerializer(serializers.ModelSerializer):
@@ -12,8 +12,3 @@ class PaymentPlanSerializer(serializers.ModelSerializer):
       model = PaymentPlan
       fields = "__all__"
 
-
-class PaymentHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentHistory
-        fields = "__all__"

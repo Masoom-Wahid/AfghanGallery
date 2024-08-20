@@ -6,37 +6,11 @@ from django.urls import reverse
 from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
-    brandname = serializers.SerializerMethodField()
-    category = serializers.SerializerMethodField()
     imgs = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
-        fields = [
-            "price",
-            "description",
-            "brandname",
-            "series",
-            "type",
-            "category",
-            "model",
-            "year",
-            "gear",
-            "km",
-            "engine_type",
-            "heavy_damage_recorded",
-            "color",
-            "warranty",
-            "swap",
-            "payment",
-            "imgs",
-            "created_at",
-        ]
+        exclude = ["payment","payment_plan_activation_date"]
 
-    def get_brandname(self,obj):
-        return obj.brand.name if obj.brand else None
-
-    def get_category(self,obj):
-        return obj.brand.name if obj.brand else None
 
     def get_imgs(self, obj):
         # request = self.context.get('request')

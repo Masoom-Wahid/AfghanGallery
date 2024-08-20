@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
-from payment.serializers import PaymentHistorySerializer
+from payment.serializers import PaymentPlanSerializer 
 from user import paginations
 from .token_factory import create_token
 from .serializers import (
@@ -22,7 +22,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .paginations import StaffPagination
 from rest_framework.pagination import PageNumberPagination
-from payment.models import PaymentHistory
+from payment.models import PaymentPlan 
 
 
 class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericViewSet):
@@ -37,7 +37,7 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
             "partial_update",
             "destroy",
             "upload_tazkira",
-            "user_history"
+            "payment_history"
         ]:
             return [IsOwnerOrAdminOrStaff()]
         elif self.action == "staff":
@@ -55,7 +55,7 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         return Response({"token": token}, status=status.HTTP_201_CREATED)
 
 
-
+    """
     @swagger_auto_schema(
             methods=["get"],
             operation_id="payment_history_list",
@@ -64,7 +64,7 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
             responses={
                 200: openapi.Response(
                     description='A list of staff users',
-                    schema=PaymentHistorySerializer
+                    schema=PaymentPlanSerializer
                 ),
                 400: openapi.Response(
                     description='Bad request',
@@ -87,22 +87,23 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
             },
             tags=['Payment History']
         )
+    """
     @action(
         detail=False,
         methods=["GET"],
-        url_path='(?P<pk>\d+)/payment_history',
+        url_path="payment_history",
         url_name="Get user's payment history",
         filter_backends=[],
         serializer_class=None,
     )
-    def user_history(self,request,pk=None):
+    def payment_history(self,request):
         instance= self.get_object()
 
-        payments = PaymentHistory.objects.filter(
+        payments = PaymentPlan.objects.filter(
             user = instance
         )
 
-        serializer = PaymentHistorySerializer(
+        serializer = PaymentPlanSerializer(
             payments,
             many=True
         )

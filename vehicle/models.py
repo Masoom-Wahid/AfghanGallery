@@ -64,28 +64,6 @@ VEHICLE_CATEGORY_CHOICES = [
 ]
 
 
-class VehicleCategory(models.Model):
-    name = models.CharField(max_length=255,null=False,blank=False,unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-
-
-    def __str__(self) -> str:
-        return self.name
-
-
-class VehicleBrand(models.Model):
-    name  = models.CharField(max_length=255,null=False,blank=False,unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return self.name
-
-
-
-
 
 class VehicleManager(models.Manager):
     def vitrine_vehicles(self):
@@ -97,7 +75,7 @@ class VehicleManager(models.Manager):
             created_at + vitrine > today
         """
         today = timezone.now()
-        # add another feild to each row which is payment-created_at + virtine
+        # add another feild to each row which is payment_plan_activation_date + virtine
         vehicles = self.annotate(
             effective_end_date=ExpressionWrapper(
                 F('payment_plan_activation_date') + F('payment__package__vitrine'),
@@ -108,7 +86,6 @@ class VehicleManager(models.Manager):
         # Filter vehicles where the vitrine is greater than or equal to today
         return vehicles.filter(
             payment__isnull=False,
-            payment__is_active=True,
             effective_end_date__gte=today
         )
 
@@ -142,7 +119,7 @@ class Vehicle(models.Model):
     plate_model = models.SmallIntegerField(null=False,blank=False,db_index=True)
 
     payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
-    discount = models.PositiveIntegerField(default=0, validators=[MinValueValidator(1), MaxValueValidator(100)])
+    discount = models.FloatField(default=0, validators=[MinValueValidator(1), MaxValueValidator(100)])
     payment_plan_activation_date = models.DateTimeField(null=True,blank=True)
 
 

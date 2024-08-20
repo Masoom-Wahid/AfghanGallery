@@ -9,5 +9,28 @@ services:
     command: ./start.sh
     environment:
       - SECRET_KEY=${SECRET_KEY}
+
+  chat:
+    image: masoomwahid/afghangallerychat
+    ports:
+      - "3021:3021"
+    volumes:
+      - ./sqlite.db:/app/db.sqlite3
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_PATH=./db.sqlite3
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - PORT=3021
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
+
 volumes:
   medias:
+  redis-data:

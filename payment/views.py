@@ -6,7 +6,7 @@ from rest_framework.mixins import CreateModelMixin, DestroyModelMixin,RetrieveMo
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from .models import Packages, PaymentHistory, PaymentPlan
+from .models import Packages, PaymentPlan
 from user.perms import IsAdminOrStaff
 from .perms import PaymentOwnerOrAdminOrStaff
 from .serializers import PackagesSerializer, PaymentPlanSerializer
@@ -24,6 +24,30 @@ class PackagesViewset(ModelViewSet):
         if self.action == "list":
             return [AllowAny()]
         return [IsAdminOrStaff()]
+
+
+    def list(self,request):
+        instance = Packages.objects.filter(
+                is_valid=True
+        )
+
+        serializer = PackagesSerializer(
+                instance,
+                many=True
+        )
+
+        return Response(
+                serializer.data
+        )
+        
+
+    def destroy(self,pk=None):
+        instance = self.get_object()
+        instance.is_valid = False
+        instance.save()
+        return Response(
+                status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class PaymentPlanViewSet(
@@ -85,10 +109,9 @@ class PaymentPlanViewSet(
         email = request.data.get("email",None)
 
 
-
         package = get_object_or_404(
             Packages,
-            pk=request.data.get("package",None)
+            name=request.data.get("package",None)
         )
 
         if not phone and not email:
@@ -111,14 +134,6 @@ class PaymentPlanViewSet(
             user=user
         )
 
-        # add to the users history
-        PaymentHistory.objects.create(
-            user=user,
-            payment=instance
-        )
-
-
-
 
 
         serializer = PaymentPlanSerializer(
@@ -130,7 +145,7 @@ class PaymentPlanViewSet(
             status=status.HTTP_201_CREATED
         )
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request):
         instance = self.get_object()
         serializer = PaymentPlanSerializer(instance)
         return Response(

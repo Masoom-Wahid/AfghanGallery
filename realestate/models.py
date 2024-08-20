@@ -65,7 +65,6 @@ class RealEstateManager(models.Manager):
         # Filter vehicles where the vitrine is greater than or equal to today
         return real_estates.filter(
             payment__isnull=False,
-            payment__is_active=True,
             effective_end_date__gte=today
         )
 
@@ -95,7 +94,7 @@ class RealEstate(models.Model):
     payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
     payment_plan_activation_date = models.DateTimeField(null=True,blank=True)
 
-    discount = models.PositiveIntegerField(default=0, validators=[MinValueValidator(1), MaxValueValidator(100)])
+    discount = models.FloatField(default=0, validators=[MinValueValidator(1), MaxValueValidator(100)])
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
