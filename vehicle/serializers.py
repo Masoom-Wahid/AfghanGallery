@@ -68,13 +68,16 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
 class VitrineVehicleSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
-        fields = ["name","price","img"]
+        fields = ["type","id","name","price","img"]
 
     def get_name(self,obj):
         return f"{obj.brand}  {obj.model} {obj.year}"
 
+    def get_type(self,_) -> str:
+        return "vehicle"
 
     def get_img(self,obj):
         first_img = VehicleImages.objects.filter(

@@ -25,7 +25,7 @@ class Vitrine(
     @swagger_auto_schema(
         responses={
             200: openapi.Response(
-                'Successful ResponsE',
+                'Successful Response',
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -37,28 +37,11 @@ class Vitrine(
                             items=openapi.Schema(
                                 type=openapi.TYPE_OBJECT,
                                 properties={
-                                    'vehicles': openapi.Schema(
-                                        type=openapi.TYPE_ARRAY,
-                                        items=openapi.Schema(
-                                            type=openapi.TYPE_OBJECT,
-                                            properties={
-                                                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the vehicle'),
-                                                'price': openapi.Schema(type=openapi.TYPE_NUMBER, format=openapi.FORMAT_FLOAT, description='Price of the vehicle'),
-                                                'img': openapi.Schema(type=openapi.TYPE_STRING, description='Image URL of the vehicle')
-                                            }
-                                        )
-                                    ),
-                                    'real_estates': openapi.Schema(
-                                        type=openapi.TYPE_ARRAY,
-                                        items=openapi.Schema(
-                                            type=openapi.TYPE_OBJECT,
-                                            properties={
-                                                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the real estate'),
-                                                'price': openapi.Schema(type=openapi.TYPE_NUMBER, format=openapi.FORMAT_FLOAT, description='Price of the real estate'),
-                                                'img': openapi.Schema(type=openapi.TYPE_STRING, description='Image URL of the real estate')
-                                            }
-                                        )
-                                    )
+                                    'name': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the item (vehicle or real estate)'),
+                                    'price': openapi.Schema(type=openapi.TYPE_NUMBER, format=openapi.FORMAT_FLOAT, description='Price of the item'),
+                                    'img': openapi.Schema(type=openapi.TYPE_STRING, description='Image URL of the item'),
+                                    "id" : openapi.Schema(type=openapi.TYPE_INTEGER,description="id of the given thing"),
+                                    "type" : openapi.Schema(type=openapi.TYPE_STRING,description="'realestate' if realestate or else 'vehicle' ")
                                 }
                             )
                         )
@@ -67,6 +50,7 @@ class Vitrine(
             )
         }
     )
+     
     def list(self,request):
         vehicles = Vehicle.objects.vitrine_vehicles()
         vehicle_serializer = VitrineVehicleSerializer(vehicles, many=True)

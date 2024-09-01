@@ -58,10 +58,14 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
 
 class VitrineRealEstateSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
-        fields = ["location","price","img"]
+        fields = ["type","id","location","price","img"]
 
+
+    def get_type(self,_) -> str:
+        return "real_estate"
     def get_img(self,obj):
         first_img = RealEstateImage.objects.filter(
             id=obj.id
