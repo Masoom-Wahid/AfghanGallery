@@ -76,10 +76,7 @@ class Vitrine(
         real_estate_serializer = VitrineRealEstateSerializer(real_estates, many=True)
         real_estate_data = real_estate_serializer.data
 
-        combined_data = [
-            {"vehicles": vehicle_data},
-            {"real_estates": real_estate_data}
-        ]
+        combined_data = vehicle_data + real_estate_data # type:ignore 
 
         paginator = self.pagination_class()
         paginated_combined_data = paginator.paginate_queryset(combined_data, request, view=self)

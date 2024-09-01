@@ -16,17 +16,22 @@ from .serializers import (
 )
 from django.shortcuts import get_object_or_404
 from .perms import IsOwnerOrAdminOrStaff,IsAdmin
-from rest_framework.mixins import CreateModelMixin,UpdateModelMixin,DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from payment.models import PaymentPlan 
-from .models import Room
+from .models import CustomUser, Room
 
 
-class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericViewSet):
+class UserViewSet(
+    CreateModelMixin,
+    UpdateModelMixin,
+    DestroyModelMixin,
+    RetrieveModelMixin,
+    GenericViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = CustomUserSerializer
 
@@ -34,13 +39,20 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
     def get_permissions(self):
         if self.action == "create":
             return [AllowAny()]
-        elif self.action in ["chats","notifs","favs"]:
+        elif self.action in [
+                "chats",
+                "notifs",
+                "favs",
+                "reset_password"
+                ]:
             return [IsAuthenticated()]
         elif self.action in  [
             "partial_update",
             "destroy",
             "upload_tazkira",
-            "payment_history"
+            "payment_history",
+            "reset_password",
+            "admin_change_password"  
         ]:
             return [IsOwnerOrAdminOrStaff()]
         elif self.action == "staff":
@@ -56,8 +68,33 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         instance.save()
         token = create_token(instance)
         return Response({"token": token}, status=status.HTTP_201_CREATED)
+    
 
-
+    @action(
+        detail=False,
+        methods=["POST"],
+        url_path='(?P<pk>\d+)/change_password',
+        url_name="admin change user password",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def admin_change_password(self,request,pk=None):
+        instance : CustomUser = self.get_object()
+        if not request.data.get("password"):
+            return Response(
+                {
+                    "detail" : "password required'"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        instance.set_password(
+            request.data.get("password") 
+        )
+        instance.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
     """
     @swagger_auto_schema(
             methods=["get"],
@@ -116,6 +153,13 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         )
 
 
+
+    def retrieve(self, request,pk=None):
+        instance = self.get_object()
+        serializer = CustomUserSerializer(instance)
+        return Response(
+                serializer.data
+        )
 
 
 
@@ -307,6 +351,37 @@ class UserViewSet(CreateModelMixin,UpdateModelMixin,DestroyModelMixin,GenericVie
         return Response(
                 serializer.data
         )
+
+    
+    @action(
+            detail=False,
+            methods=["POST"]
+    )
+    def reset_password(self,request):
+        old_pass = request.data.get("old_password",None)
+        new_pass = request.data.get("new_password",None)
+        
+        if not old_pass or not new_pass:
+            return Response(
+                {
+                    "detail" : "old_password and new_password required"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if request.user and request.user.check_password(old_pass):
+            request.user.set_password(new_pass)
+            return Response(
+                    status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {
+                    "detail": "Invalid Old Pass"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
 
 
 class JwtToken(APIView):
