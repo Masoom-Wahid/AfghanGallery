@@ -15,7 +15,7 @@ class Packages(models.Model):
     # still valid or not 
     is_valid = models.BooleanField(default=True,db_index=True)
 
-    discount = models.FloatField(default=0, validators=[MinValueValidator(1), MaxValueValidator(100)])
+    discount = models.FloatField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
 
 
     created_at = models.DateTimeField(auto_now_add=True)
