@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'drf_yasg',
     "corsheaders",
+    "django_filters",
     "user",
     "payment",
     "vehicle",
