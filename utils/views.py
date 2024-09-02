@@ -41,7 +41,7 @@ class Vitrine(
                                     'price': openapi.Schema(type=openapi.TYPE_NUMBER, format=openapi.FORMAT_FLOAT, description='Price of the item'),
                                     'img': openapi.Schema(type=openapi.TYPE_STRING, description='Image URL of the item'),
                                     "id" : openapi.Schema(type=openapi.TYPE_INTEGER,description="id of the given thing"),
-                                    "type" : openapi.Schema(type=openapi.TYPE_STRING,description="'realestate' if realestate or else 'vehicle' ")
+                                    "type" : openapi.Schema(type=openapi.TYPE_STRING,description="'realestates' or 'vehicles' ")
                                 }
                             )
                         )
