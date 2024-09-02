@@ -65,7 +65,7 @@ class VitrineRealEstateSerializer(serializers.ModelSerializer):
 
 
     def get_type(self,_) -> str:
-        return "real_estate"
+        return "realestates"
     def get_img(self,obj):
         first_img = RealEstateImage.objects.filter(
             id=obj.id

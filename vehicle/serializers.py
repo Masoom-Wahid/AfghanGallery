@@ -77,7 +77,7 @@ class VitrineVehicleSerializer(serializers.ModelSerializer):
         return f"{obj.brand}  {obj.model} {obj.year}"
 
     def get_type(self,_) -> str:
-        return "vehicle"
+        return "vehicles"
 
     def get_img(self,obj):
         first_img = VehicleImages.objects.filter(
