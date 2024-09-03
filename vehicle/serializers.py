@@ -7,10 +7,14 @@ from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
+    lister_name = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
         exclude = ["payment","payment_plan_activation_date"]
 
+
+    def get_lister_name(self,obj):
+        return f"{obj.lister.name} {obj.lister.last_name}"
 
     def get_imgs(self, obj):
         # request = self.context.get('request')
