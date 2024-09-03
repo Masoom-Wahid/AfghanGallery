@@ -24,7 +24,7 @@ router.register(r'payments',PaymentPlanViewSet,basename="payment")
 schema_view = get_schema_view(
    openapi.Info(
       title="AfghanGallery API",
-      default_version='v2',
+      default_version='v3',
       description="Description",
       terms_of_service="https://www.google.com/policies/terms/",
       contact=openapi.Contact(email="contact@snippets.local"),
