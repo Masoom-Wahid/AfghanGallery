@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from utils.serializers import generate_keyword_args
 from .models import RealEstate,RealEstateImage
 
 class RealEstateSerializer(serializers.ModelSerializer):
@@ -22,7 +24,12 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = RealEstate
         exclude= ["created_at","updated_at","payment","payment_plan_activation_date"]
-
+        extra_kwargs = generate_keyword_args(
+            fields=[field.name for field in model._meta.get_fields()],
+            unique_names=[],
+            model=model
+        )
+        
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")

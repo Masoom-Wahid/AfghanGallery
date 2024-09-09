@@ -1,9 +1,8 @@
-from django.core.serializers.base import SerializationError
 from django.utils import timezone
 from rest_framework import serializers
+
+from utils.serializers import generate_keyword_args
 from .models import Vehicle,VehicleImages
-from django.urls import reverse
-from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
@@ -11,7 +10,11 @@ class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         exclude = ["payment","payment_plan_activation_date"]
-
+        extra_kwargs = generate_keyword_args(
+            fields=[field for field  in model._meta.get_fields()],
+            unique_names=["plate_no"],
+            model=model
+        ) 
 
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
@@ -27,7 +30,11 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         exclude= ["created_at","updated_at","payment"]
-
+        extra_kwargs = generate_keyword_args(
+            fields=[field.name for field  in model._meta.get_fields()],
+            unique_names=["plate_no"],
+            model=model
+        ) 
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")
