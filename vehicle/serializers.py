@@ -1,16 +1,23 @@
-from django.core.serializers.base import SerializationError
 from django.utils import timezone
 from rest_framework import serializers
+
+from utils.serializers import generate_keyword_args
 from .models import Vehicle,VehicleImages
-from django.urls import reverse
-from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
+    lister_name = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
         exclude = ["payment","payment_plan_activation_date"]
+        extra_kwargs = generate_keyword_args(
+            fields=[field for field  in model._meta.get_fields()],
+            unique_names=["plate_no"],
+            model=model
+        ) 
 
+    def get_lister_name(self,obj):
+        return f"{obj.lister.name} {obj.lister.last_name}"
 
     def get_imgs(self, obj):
         # request = self.context.get('request')
@@ -23,7 +30,11 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         exclude= ["created_at","updated_at","payment"]
-
+        extra_kwargs = generate_keyword_args(
+            fields=[field.name for field  in model._meta.get_fields()],
+            unique_names=["plate_no"],
+            model=model
+        ) 
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")
@@ -68,13 +79,16 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
 class VitrineVehicleSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
-        fields = ["name","price","img"]
+        fields = ["type","id","name","price","img"]
 
     def get_name(self,obj):
         return f"{obj.brand}  {obj.model} {obj.year}"
 
+    def get_type(self,_) -> str:
+        return "vehicles"
 
     def get_img(self,obj):
         first_img = VehicleImages.objects.filter(

@@ -1,13 +1,18 @@
 from rest_framework import serializers
+
+from utils.serializers import generate_keyword_args
 from .models import RealEstate,RealEstateImage
 
 class RealEstateSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
+    lister_name = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
         fields = "__all__"
 
-
+    
+    def get_lister_name(self,obj):
+        return f"{obj.lister.name} {obj.lister.last_name}"
     def get_imgs(self,obj):
         all_imgs = RealEstateImage.objects.filter(realestate=obj.id)
         return [imgs.img.name for imgs in all_imgs]
@@ -19,7 +24,12 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = RealEstate
         exclude= ["created_at","updated_at","payment","payment_plan_activation_date"]
-
+        extra_kwargs = generate_keyword_args(
+            fields=[field.name for field in model._meta.get_fields()],
+            unique_names=[],
+            model=model
+        )
+        
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")
@@ -58,10 +68,14 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
 
 class VitrineRealEstateSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
-        fields = ["location","price","img"]
+        fields = ["type","id","location","price","img"]
 
+
+    def get_type(self,_) -> str:
+        return "realestates"
     def get_img(self,obj):
         first_img = RealEstateImage.objects.filter(
             id=obj.id

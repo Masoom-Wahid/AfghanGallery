@@ -6,6 +6,7 @@ from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from user.perms import IsAuthenticated
+from vehicle.filterset import VehicleFilterSet
 from .perms import IsVehicleOwner, IsVehicleOwnerOrIsAdminOrStaff
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin,RetrieveModelMixin, UpdateModelMixin
@@ -17,6 +18,10 @@ from drf_yasg import openapi
 from payment.models import PaymentPlan
 from utils.tasks import scheduler
 from utils.notifs import update_notifs
+from django_filters.rest_framework import DjangoFilterBackend
+
+
+
 class VehicleViewSet(
     CreateModelMixin,
     ListModelMixin,
@@ -27,7 +32,9 @@ class VehicleViewSet(
 ):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
-
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = VehicleFilterSet
+    
 
     def get_parser_classes(self):
         if self.action == "create":
@@ -82,8 +89,15 @@ class VehicleViewSet(
 
 
 
-
-
+    """
+    cateogry
+    price
+    type
+    city
+    plate_no
+    color
+    """
+    
 
 
 

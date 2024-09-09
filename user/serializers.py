@@ -1,10 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
-from django.db.utils import IntegrityError as DjangoIntegrityError
-
+from utils.serializers import generate_keyword_args
 from user.models import Room
-
 
 class CustomUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -28,6 +25,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "is_superuser"
         ]
 
+        extra_kwargs = generate_keyword_args(
+            fields=fields,
+            unique_names=["email","phone_no"],
+            model=model
+        )
+
     def get_fields(self):
         """
         since i want 'is_verified' to be editiable only by staff and superuser here edit those
@@ -49,8 +52,15 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
+        
         fields = ["email", "password", "name", "last_name", "phone_no"]
-
+        
+        
+        extra_kwargs = generate_keyword_args(
+            fields=fields,
+            unique_names=["email","phone_no"],
+            model=model
+        ) 
 
 
 

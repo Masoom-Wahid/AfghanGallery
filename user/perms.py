@@ -38,6 +38,8 @@ class IsOwnerOrAdminOrStaff(BasePermission):
         """
         if request.user.is_superuser: return True
         if request.user.is_staff:
+            if obj.is_superuser:
+                return False
             if obj.is_staff:
                 return obj == request.user
             else:
