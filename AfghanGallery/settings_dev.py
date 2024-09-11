@@ -7,6 +7,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://afghangallery.mehdiwahid.dev'
 ]
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+SIMPLE_JWT["SIGNING_KEY"] =  SECRET_KEY
+
 DEBUG = True
 DATABASES = {
     "default": {

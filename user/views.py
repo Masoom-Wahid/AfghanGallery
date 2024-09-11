@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 from rest_framework.permissions import AllowAny
 
-from user_info.models import UserFavs, UserNotifications
-from user_info.serializers import UserFavsSerializer, UserNotifsSerializer
+from user.paginations import HistoryPagination
+from user_info.models import UserFavs, UserHistory, UserNotifications
+from user_info.serializers import UserFavsSerializer, UserHistorySerializer, UserNotifsSerializer
 from .perms import IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
 from payment.serializers import PaymentPlanSerializer 
@@ -20,7 +21,7 @@ from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin,UpdateMod
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import serializers, swagger_auto_schema
 from drf_yasg import openapi
 from payment.models import PaymentPlan 
 from .models import CustomUser, Room
@@ -43,6 +44,7 @@ class UserViewSet(
                 "chats",
                 "notifs",
                 "favs",
+                "history",
                 "reset_password"
                 ]:
             return [IsAuthenticated()]
@@ -343,11 +345,24 @@ class UserViewSet(
         return Response(serializer.data)
 
     @action(detail=False,methods=["GET"])
+    def history(self,request):
+        instance = UserHistory.objects.filter(
+            user=request.user 
+        )
+        paginator = HistoryPagination()
+        paginted_data = paginator.paginate_queryset(instance,request)
+        serializer = UserHistorySerializer(paginted_data,many=True)
+        
+        
+        return paginator.get_paginated_response(serializer.data)
+
+
+    @action(detail=False,methods=["GET"])
     def favs(self,request):
         instance = UserFavs.objects.filter(
                 user=request.user
         )
-        serializer = UserFavsSerializer(instance)
+        serializer = UserFavsSerializer(instance,many=True)
         return Response(
                 serializer.data
         )

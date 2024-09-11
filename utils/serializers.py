@@ -20,7 +20,6 @@ def generate_keyword_args(
                     }, 
             }
         if field in unique_names:
-            print(f"here with field {field}")
             extra_kwargs[field]["validators"] = [
                         UniqueValidator(
                             queryset=model.objects.all(), #type:ignore

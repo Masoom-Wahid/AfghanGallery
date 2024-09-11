@@ -14,6 +14,7 @@ for host in os.getenv("ALLOWED_HOST","").split(","):
 
 ALLOWED_HOSTS = allowed_hosts
 CORS_ALLOW_ALL_ORIGINS = True
+SIMPLE_JWT["SIGNING_KEY"] =  SECRET_KEY
 
 DATABASES = {
     'default': {

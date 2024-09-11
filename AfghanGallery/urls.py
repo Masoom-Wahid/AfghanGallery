@@ -12,7 +12,10 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import routers
 from utils.views import Vitrine
-
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 router = routers.DefaultRouter()
 router.register(r'users',UserViewSet,basename="users")
 router.register(r'vehicles',VehicleViewSet,basename="vehicles")
@@ -37,7 +40,8 @@ schema_view = get_schema_view(
 urlpatterns = [
     # path("api/users/",include("user.urls")),
     path("api/",include(router.urls)),
-    path("api/auth/",JwtToken.as_view()),
+    path("api/auth/",TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 
