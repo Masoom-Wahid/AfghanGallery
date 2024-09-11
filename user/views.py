@@ -349,24 +349,27 @@ class UserViewSet(
         instance = UserHistory.objects.filter(
             user=request.user 
         )
-        paginator = HistoryPagination()
-        paginted_data = paginator.paginate_queryset(instance,request)
-        serializer = UserHistorySerializer(paginted_data,many=True)
+        page = self.paginate_queryset(instance)
+        if page:
+            serializer = UserHistorySerializer(instance,many=True)
+            return self.get_paginated_response(serializer.data) 
         
-        
-        return paginator.get_paginated_response(serializer.data)
+        serializer = UserHistorySerializer(instance,many=True)
+        return self.get_paginated_response(serializer.data)
 
 
     @action(detail=False,methods=["GET"])
     def favs(self,request):
         instance = UserFavs.objects.filter(
-                user=request.user
+            user=request.user 
         )
+        page = self.paginate_queryset(instance)
+        if page:
+            serializer = UserFavsSerializer(instance,many=True)
+            return self.get_paginated_response(serializer.data) 
+        
         serializer = UserFavsSerializer(instance,many=True)
-        return Response(
-                serializer.data
-        )
-
+        return self.get_paginated_response(serializer.data)
     
     @action(
             detail=False,
