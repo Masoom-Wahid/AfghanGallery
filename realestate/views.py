@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
@@ -15,7 +16,7 @@ from .serializers import RealEstateCreationSerializer, RealEstateSerializer
 from drf_yasg import openapi
 from utils.tasks import scheduler
 from utils.notifs import update_notifs
-
+from .filterset import RealEstateFilterSet
 class RealEstateViewSet(
     ListModelMixin,
     CreateModelMixin,
@@ -27,7 +28,9 @@ class RealEstateViewSet(
     permission_classes = [AllowAny]
     queryset = RealEstate.objects.all()
     serializer_class = RealEstateSerializer
-
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RealEstateFilterSet
+        
     def get_parser_classes(self):
         if self.action == "create":
             return [MultiPartParser(), FormParser()]

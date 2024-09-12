@@ -10,7 +10,7 @@ class RealEstateFilterSet(filters.FilterSet):
 
     class Meta:
         model = RealEstate 
-        fields = ("price","city","type")
+        fields = ("price","city","type","contract_type")
     
 
     def get_queryset(self, qs, value):
