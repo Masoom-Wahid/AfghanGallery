@@ -8,7 +8,8 @@ from django.contrib.auth import get_user_model
 
 PRODUCT_TYPES = [
     ("vehicle","Vehicle"),
-    ("real_estate","RealEstate")
+    ("real_estate","RealEstate"),
+    ("person","Person")
 ]
 
 
@@ -16,8 +17,9 @@ PRODUCT_TYPES = [
 
 class UserFavs(models.Model):
     user = models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    type = models.CharField(max_length=50,choices=PRODUCT_TYPES,null=False,blank=False)
+    type = models.CharField(max_length=50,choices=PRODUCT_TYPES,null=False,blank=False,db_index=True)
     vehicle = models.ForeignKey(Vehicle,on_delete=models.CASCADE,null=True,blank=True)
+    person = models.ForeignKey(get_user_model(),on_delete=models.CASCADE,null=True,blank=True,related_name="person")
     real_estate = models.ForeignKey(RealEstate,on_delete=models.CASCADE,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

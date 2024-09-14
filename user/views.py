@@ -3,12 +3,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 from rest_framework.permissions import AllowAny
 
-from user.paginations import HistoryPagination
+from realestate.models import RealEstate
+from user.paginations import HistoryPagination, StandardPagination
 from user_info.models import UserFavs, UserHistory, UserNotifications
 from user_info.serializers import UserFavsSerializer, UserHistorySerializer, UserNotifsSerializer
+from vehicle.models import Vehicle
 from .perms import IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
-from payment.serializers import PaymentPlanSerializer 
+from payment.serializers import PaymentPlanSerializer
 from .token_factory import create_token
 from .serializers import (
     CustomUserSerializer,
@@ -23,8 +25,12 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
 from drf_yasg.utils import serializers, swagger_auto_schema
 from drf_yasg import openapi
-from payment.models import PaymentPlan 
+from payment.models import PaymentPlan
 from .models import CustomUser, Room
+from django.utils import timezone
+from django.db.models import F,ExpressionWrapper,DurationField,DateTimeField
+from vehicle.serializers import VitrineVehicleSerializer
+from realestate.serializers import VitrineRealEstateSerializer
 
 
 class UserViewSet(
@@ -54,7 +60,7 @@ class UserViewSet(
             "upload_tazkira",
             "payment_history",
             "reset_password",
-            "admin_change_password"  
+            "admin_change_password"
         ]:
             return [IsOwnerOrAdminOrStaff()]
         elif self.action == "staff":
@@ -70,7 +76,7 @@ class UserViewSet(
         instance.save()
         token = create_token(instance)
         return Response({"token": token}, status=status.HTTP_201_CREATED)
-    
+
 
     @action(
         detail=False,
@@ -89,47 +95,97 @@ class UserViewSet(
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         instance.set_password(
-            request.data.get("password") 
+            request.data.get("password")
         )
         instance.save()
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
-    """
+
+
+    def get_active_instances(self,user : CustomUser,is_active : bool):
+        """
+            returns the vehicles and realestates of a person
+            params :
+                user -> the user
+                is_active -> should the package still be active? (calcultaed by payment_plan_activation_date + package__effective_date >= today)
+        """
+        if is_active:
+            today = timezone.now()
+            vehicles = Vehicle.objects.annotate(
+                payment_plan_end_date=ExpressionWrapper(
+                    F('payment_plan_activation_date') + F('payment__package__effective_date'),
+                    output_field=DateTimeField()
+                )
+            ).filter(
+                lister=user,
+                payment__isnull=False,
+                payment_plan_end_date__gte=today
+            )
+
+            realestates = RealEstate.objects.annotate(
+                payment_plan_end_date=ExpressionWrapper(
+                    F('payment_plan_activation_date') + F('payment__package__effective_date'),
+                    output_field=DateTimeField()
+                )
+            ).filter(
+                lister=user,
+                payment__isnull=False,
+                payment_plan_end_date__gte=today
+            )
+        else:
+            vehicles = Vehicle.objects.filter(
+                lister=user,
+                payment__isnull=False
+            )
+
+            realestates = RealEstate.objects.filter(
+                lister=user,
+                payment__isnull=False
+            )
+
+        return vehicles,realestates
+
+
+
     @swagger_auto_schema(
-            methods=["get"],
-            operation_id="payment_history_list",
-            summary="Retrieve a list user's payment history",
-            description="Retrieve a list user's payment history.",
-            responses={
-                200: openapi.Response(
-                    description='A list of staff users',
-                    schema=PaymentPlanSerializer
-                ),
-                400: openapi.Response(
-                    description='Bad request',
-                    schema=openapi.Schema(
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'is_active',
+                openapi.IN_QUERY,
+                description="Filter for active instances. Set to true to get only active vehicles and real estates.",
+                type=openapi.TYPE_BOOLEAN,
+                required=False
+            )
+        ],
+        responses={200: openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Total number of payment records'),
+                'next': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI, description='URL to the next page', nullable=True),
+                'previous': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI, description='URL to the previous page', nullable=True),
+                'results': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
                         type=openapi.TYPE_OBJECT,
                         properties={
-                            'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message'),
-                        }
+                            'type': openapi.Schema(type=openapi.TYPE_STRING, example="vehicles or realestates"),
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, example=3),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING, example="Toyota F 2000"),
+                            'price': openapi.Schema(type=openapi.TYPE_INTEGER, example=3000),
+                            'img': openapi.Schema(type=openapi.TYPE_STRING, example="vehicle/bmw_FHCUADb.jpg", nullable=True),
+                            'package': openapi.Schema(type=openapi.TYPE_STRING, example="SILVER"),
+                            'location': openapi.Schema(type=openapi.TYPE_STRING, example="Heartttt", nullable=True)
+                        },
+                        required=['type', 'id', 'price', 'package']
                     )
-                ),
-                404: openapi.Response(
-                    description='Invalid User',
-                    schema=openapi.Schema(
-                        type=openapi.TYPE_OBJECT,
-                        properties={
-                            'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message'),
-                        }
-                    )
-                ),
-            },
-            tags=['Payment History']
-        )
-    """
+                )
+            }
+        )}
+    )
     @action(
         detail=False,
         methods=["GET"],
@@ -139,20 +195,29 @@ class UserViewSet(
         serializer_class=None,
     )
     def payment_history(self,request):
-        instance= self.get_object()
+        is_active = request.GET.get("is_active",False)
+        if is_active:
+            vehicles,real_estates = self.get_active_instances(request.user,True)
+        else:
+            vehicles,real_estates = self.get_active_instances(request.user,False)
 
-        payments = PaymentPlan.objects.filter(
-            user = instance
-        )
+        vehicle_serializer = VitrineVehicleSerializer(vehicles,many=True)
+        real_estates_serializer = VitrineRealEstateSerializer(real_estates,many=True)
 
-        serializer = PaymentPlanSerializer(
-            payments,
-            many=True
-        )
 
-        return Response(
-            serializer.data
-        )
+        combined_data = vehicle_serializer.data + real_estates_serializer.data # type:ignore
+
+        paginator = StandardPagination()
+        paginated_combined_data = paginator.paginate_queryset(combined_data, request, view=self)
+
+        response_data = {
+                "count": len(combined_data),
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
+                "results": paginated_combined_data
+        }
+
+        return Response(response_data)
 
 
 
@@ -327,7 +392,7 @@ class UserViewSet(
         return Response(
                 serializer.data
         )
-        
+
 
     @action(
             detail=False,
@@ -347,13 +412,13 @@ class UserViewSet(
     @action(detail=False,methods=["GET"])
     def history(self,request):
         instance = UserHistory.objects.filter(
-            user=request.user 
+            user=request.user
         )
         page = self.paginate_queryset(instance)
         if page:
             serializer = UserHistorySerializer(instance,many=True)
-            return self.get_paginated_response(serializer.data) 
-        
+            return self.get_paginated_response(serializer.data)
+
         serializer = UserHistorySerializer(instance,many=True)
         return self.get_paginated_response(serializer.data)
 
@@ -361,16 +426,16 @@ class UserViewSet(
     @action(detail=False,methods=["GET"])
     def favs(self,request):
         instance = UserFavs.objects.filter(
-            user=request.user 
+            user=request.user
         )
         page = self.paginate_queryset(instance)
         if page:
             serializer = UserFavsSerializer(instance,many=True)
-            return self.get_paginated_response(serializer.data) 
-        
+            return self.get_paginated_response(serializer.data)
+
         serializer = UserFavsSerializer(instance,many=True)
         return self.get_paginated_response(serializer.data)
-    
+
     @action(
             detail=False,
             methods=["POST"]
@@ -378,7 +443,7 @@ class UserViewSet(
     def reset_password(self,request):
         old_pass = request.data.get("old_password",None)
         new_pass = request.data.get("new_password",None)
-        
+
         if not old_pass or not new_pass:
             return Response(
                 {
@@ -399,7 +464,7 @@ class UserViewSet(
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
+
 
 
 class JwtToken(APIView):

@@ -14,7 +14,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             fields=[field for field  in model._meta.get_fields()],
             unique_names=["plate_no"],
             model=model
-        ) 
+        )
 
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
@@ -34,7 +34,7 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
             fields=[field.name for field  in model._meta.get_fields()],
             unique_names=["plate_no"],
             model=model
-        ) 
+        )
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")
@@ -80,9 +80,17 @@ class VitrineVehicleSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
+    package = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
-        fields = ["type","id","name","price","img"]
+        fields = ["type","id","name","price","img","package"]
+
+
+    def get_package(self,obj) -> str | None:
+            if obj.payment != None:
+                return obj.payment.package.name
+            else:
+                return None
 
     def get_name(self,obj):
         return f"{obj.brand}  {obj.model} {obj.year}"

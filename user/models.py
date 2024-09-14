@@ -58,8 +58,6 @@ class CustomUser(AbstractBaseUser,PermissionsMixin):
 
 
 
-
-
 class Room(models.Model):
     user1 = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="first_user")
     user2 = models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,blank=False,related_name="second_user")

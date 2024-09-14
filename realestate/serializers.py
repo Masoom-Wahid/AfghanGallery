@@ -10,7 +10,7 @@ class RealEstateSerializer(serializers.ModelSerializer):
         model = RealEstate
         fields = "__all__"
 
-    
+
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
     def get_imgs(self,obj):
@@ -29,7 +29,7 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
             unique_names=[],
             model=model
         )
-        
+
     def validate_price(self,value):
         if value < 0:
             raise serializers.ValidationError("Price must not be lower than 0")
@@ -69,11 +69,17 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
 class VitrineRealEstateSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
+    package = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
-        fields = ["type","id","location","price","img"]
+        fields = ["type","id","location","price","img","package"]
 
 
+    def get_package(self,obj) -> str | None:
+        if obj.payment != None:
+            return obj.payment.package.name
+        else:
+            return None
     def get_type(self,_) -> str:
         return "realestates"
     def get_img(self,obj):
