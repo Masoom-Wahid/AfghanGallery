@@ -105,14 +105,14 @@ class UserViewSet(
         )
 
 
-    def get_active_instances(self,user : CustomUser,is_active : bool):
+    def get_active_instances(self,*,user : CustomUser,filter : int):
         """
             returns the vehicles and realestates of a person
             params :
                 user -> the user
-                is_active -> should the package still be active? (calcultaed by payment_plan_activation_date + package__effective_date >= today)
+                filter([is_active],[not_active],[all]) -> should the package still be active? (calcultaed by payment_plan_activation_date + package__effective_date >= today)
         """
-        if is_active:
+        if filter == "active":
             today = timezone.now()
             vehicles = Vehicle.objects.annotate(
                 payment_plan_end_date=ExpressionWrapper(
@@ -135,6 +135,31 @@ class UserViewSet(
                 payment__isnull=False,
                 payment_plan_end_date__gte=today
             )
+        if filter == "not_active":
+            today = timezone.now()
+            vehicles = Vehicle.objects.annotate(
+                payment_plan_end_date=ExpressionWrapper(
+                    F('payment_plan_activation_date') + F('payment__package__effective_date'),
+                    output_field=DateTimeField()
+                )
+            ).filter(
+                lister=user,
+                payment__isnull=False,
+                payment_plan_end_date__lte=today
+            )
+
+            realestates = RealEstate.objects.annotate(
+                payment_plan_end_date=ExpressionWrapper(
+                    F('payment_plan_activation_date') + F('payment__package__effective_date'),
+                    output_field=DateTimeField()
+                )
+            ).filter(
+                lister=user,
+                payment__isnull=False,
+                payment_plan_end_date__lte=today
+            )
+
+
         else:
             vehicles = Vehicle.objects.filter(
                 lister=user,
@@ -154,11 +179,11 @@ class UserViewSet(
         method='get',
         manual_parameters=[
             openapi.Parameter(
-                'is_active',
+                'filter',
                 openapi.IN_QUERY,
-                description="Filter for active instances. Set to true to get only active vehicles and real estates.",
-                type=openapi.TYPE_BOOLEAN,
-                required=False
+                description="Filter based on what the user gives , can be 'active' , 'not_active'  and 'all' ",
+                type=openapi.TYPE_STRING,
+                required=True
             )
         ],
         responses={200: openapi.Schema(
@@ -195,11 +220,16 @@ class UserViewSet(
         serializer_class=None,
     )
     def payment_history(self,request):
-        is_active = request.GET.get("is_active",False)
-        if is_active:
-            vehicles,real_estates = self.get_active_instances(request.user,True)
-        else:
-            vehicles,real_estates = self.get_active_instances(request.user,False)
+        filter_query = request.GET.get("filter",False)
+        if not filter_query:
+            return Response(
+                {
+                    "detail" : "filter requried"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        vehicles,real_estates = self.get_active_instances(user=request.user,filter=filter_query)
 
         vehicle_serializer = VitrineVehicleSerializer(vehicles,many=True)
         real_estates_serializer = VitrineRealEstateSerializer(real_estates,many=True)
@@ -435,7 +465,30 @@ class UserViewSet(
 
         serializer = UserFavsSerializer(instance,many=True)
         return self.get_paginated_response(serializer.data)
+    
 
+
+    @swagger_auto_schema(
+        method='post',
+        operation_description="Reset the user's password by providing the old and new passwords.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['old_password', 'new_password'],
+            properties={
+                'old_password': openapi.Schema(type=openapi.TYPE_STRING, description='Current password'),
+                'new_password': openapi.Schema(type=openapi.TYPE_STRING, description='New password'),
+            },
+        ),
+        responses={
+            status.HTTP_204_NO_CONTENT: 'Password reset successfully',
+            status.HTTP_400_BAD_REQUEST: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'detail': openapi.Schema(type=openapi.TYPE_STRING, description='Error message')
+                }
+            )
+        }
+    )
     @action(
             detail=False,
             methods=["POST"]

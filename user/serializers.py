@@ -5,7 +5,6 @@ from user.models import Room
 
 class CustomUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, required=True)
     name = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     last_name = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     phone_no = serializers.CharField(required=True, allow_blank=False, allow_null=False)
@@ -16,7 +15,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = [
             'email',
-            'password',
             'name',
             'last_name',
             'phone_no',
@@ -40,9 +38,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
 
         if request:
+            
             if request.user.is_staff or request.user.is_superuser:
                 fields['is_verified'].read_only = False
-
+            
             if request.user.is_superuser:
                 fields['is_staff'].read_only = False
                 fields['is_superuser'].read_only = False
