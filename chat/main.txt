@@ -1,0 +1,180 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	socketio "github.com/googollee/go-socket.io"
+	"github.com/joho/godotenv"
+)
+
+var (
+	ctx             = context.Background()
+	secretKey       []byte
+	roomMutex       sync.Mutex
+	roomConnections = make(map[string]int)
+	secret_key      []byte
+)
+
+/*
+// JWTClaims struct for token claims.
+type JWTClaims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
+}
+*/
+
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	secret_key_var := os.Getenv("SECRET_KEY")
+	if secret_key_var == "" {
+		log.Fatalf("SECRET_KEY required")
+	}
+	secret_key = []byte(secret_key_var)
+
+	Init(
+		os.Getenv("DB_PATH"),
+		os.Getenv("REDIS_HOST"),
+		os.Getenv("REDIS_PORT"),
+		os.Getenv("REDIS_PASSWORD"),
+	)
+
+	server := socketio.NewServer(nil)
+	// Middleware: token validation
+	server.OnConnect("/", func(s socketio.Conn) error {
+		url := s.URL()
+		token := url.Query().Get("token")
+		if token == "" {
+			s.Close()
+			return fmt.Errorf("token required")
+		}
+		email, err := ParseToken(token)
+		if err != nil {
+			s.Close()
+			return fmt.Errorf("token required")
+		}
+		user, err := get_user_instance(email)
+		fmt.Printf("got user id %v\n", user.ID)
+		if err != nil || !user.Verified {
+			s.Close()
+			return fmt.Errorf("unauthorized")
+		}
+
+		s.SetContext(user)
+		fmt.Println("end of start")
+		return nil
+	})
+
+	server.OnEvent("/", "join_room", func(s socketio.Conn, otherEmail string) {
+		fmt.Println("here")
+
+		user := s.Context().(User)
+
+		fmt.Printf("got other email and it was %s\n", otherEmail)
+		otherUser, err := get_user_instance(otherEmail)
+		if err != nil || otherUser.ID == user.ID {
+			s.Emit("error", "Invalid user")
+			return
+		}
+
+		roomId, err := get_room(user.ID, otherUser.ID)
+		if err != nil {
+			roomId, err = create_room(user.ID, otherUser.ID)
+			if err != nil {
+				s.Emit("error", "Unable to create room")
+				return // Prevent closing the connection too early
+			}
+		}
+
+		room := fmt.Sprintf("room_%d", roomId)
+
+		s.Join(room)
+		s.Emit("joined_room", room)
+
+		// Fetch previous messages from DB and Redis
+		prevMsgs, err := get_msgs_of_room(room)
+		if err != nil {
+			s.Emit("error", "Error fetching messages")
+		}
+		redisMsgs := get_msgs_from_redis(room)
+		allMessages := append(prevMsgs, redisMsgs...)
+		s.Emit("previous_messages", allMessages)
+
+		roomMutex.Lock()
+		roomConnections[room]++
+		roomMutex.Unlock()
+	})
+
+	server.OnEvent("/", "health", func(s socketio.Conn, msg string) {
+		fmt.Println("nani")
+		s.Emit("health", msg)
+	})
+	// Handling message events
+	server.OnEvent("/", "send_message", func(s socketio.Conn, msg string) {
+		user := s.Context().(User)
+		fmt.Println(s.Rooms())
+		fmt.Println(s.Rooms()[0])
+		room := s.Rooms()[0]
+
+		message := Message{
+			Msg:      msg,
+			Time:     time.Now().Format(time.RFC3339),
+			Sender:   user.ID,
+			Receiver: 0,
+		}
+
+		msgJSON, err := json.Marshal(message)
+		if err != nil {
+			s.Close()
+		}
+		// Store message in Redis
+		if err := redisClient.LPush(ctx, "chat:"+room, msgJSON).Err(); err != nil {
+			s.Close()
+		}
+
+		// Publish message to all users in the room
+		server.BroadcastToRoom("/", room, "receive_message", message)
+	})
+
+	// On disconnect, handle message flushing
+	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Printf("My Reason was %s\n", reason)
+		fmt.Println(s.Rooms())
+		fmt.Println("exiting")
+		if len(s.Rooms()) == 0 {
+			s.Emit("Rooms are empty")
+			return
+		}
+
+		//room := s.Rooms()[0]
+		roomMutex.Lock()
+		/*
+			roomConnections[room]--
+			if roomConnections[room] == 0 {
+				saveMessagesToDB(room)
+				redisClient.Del(ctx, "chat:"+room) // Clean up Redis list after saving
+				delete(roomConnections, room)
+			}
+		*/
+		roomMutex.Unlock()
+	})
+
+	go server.Serve()
+	defer server.Close()
+
+	// Starting server
+	port := os.Getenv("PORT")
+	http.Handle("/ws/", server)
+	log.Printf("Socket.IO server started on port %s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
