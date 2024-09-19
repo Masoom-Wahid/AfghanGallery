@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from payment.models import PaymentPlan
-from django.utils import timezone
+from django.utils import choices, timezone
 from datetime import timedelta
 from django.db.models import ExpressionWrapper, F, DurationField,DateTimeField
 from utils.models import CITY_CHOICES
@@ -16,6 +16,21 @@ VEHICLE_TYPES = (
 GEAR_TYPES = (
     ("manual","Manual"),
     ("auto","Automatic"),
+)
+
+
+
+FULES_TYPES = (
+    ("lpg","Lpg"),
+    ("petrol", "Petrol"),
+    ("diesel","Diesel")
+)
+
+
+DIRECTION_TYPES = (
+    ("right","Right"),
+    ("left","Left")
+
 )
 
 
@@ -114,6 +129,9 @@ class Vehicle(models.Model):
     warranty = models.BooleanField(default=False)
     swap = models.BooleanField(default=False)
 
+
+    fuel = models.CharField(max_length=120,choices=FULES_TYPES,default="petrol",null=False,blank=False)
+    direction =  models.CharField(max_length=120,choices=DIRECTION_TYPES,default="left",null=False,blank=False)
 
     plate_no = models.IntegerField(null=False,blank=False,unique=True)
     plate_model = models.SmallIntegerField(null=False,blank=False,db_index=True)
