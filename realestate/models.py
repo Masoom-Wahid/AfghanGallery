@@ -74,7 +74,7 @@ class RealEstate(models.Model):
     city = models.CharField(max_length=255,null=False,blank=False,choices=CITY_CHOICES)
     location = models.CharField(max_length=255,null=False,blank=False)
     area = models.IntegerField(null=False,blank=False)
-    price_per_area = models.IntegerField(null=False,blank=False)
+    price_per_area = models.IntegerField(null=True,blank=True)
     """
         the diff between contract_type and type is that type
         describes the type of real_estate we talking , for example

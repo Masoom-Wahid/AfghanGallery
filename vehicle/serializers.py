@@ -29,7 +29,7 @@ class VehicleSerializer(serializers.ModelSerializer):
 class VehicleCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        exclude= ["created_at","updated_at","payment"]
+        exclude= ["created_at","updated_at"]
         extra_kwargs = generate_keyword_args(
             fields=[field.name for field  in model._meta.get_fields()],
             unique_names=["plate_no"],
@@ -71,6 +71,8 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
             return fields
         if request.method in ["PUT","PATCH"]:
             fields["lister"].read_only = True
+            fields["payment"].read_only = True
+            fields["payment_plan_activation_date"].ready_only = True
             return fields
         else:
             return fields

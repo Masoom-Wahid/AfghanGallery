@@ -23,7 +23,7 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
     type = serializers.CharField(required=False)
     class Meta:
         model = RealEstate
-        exclude= ["created_at","updated_at","payment","payment_plan_activation_date"]
+        exclude= ["created_at","updated_at"]
         extra_kwargs = generate_keyword_args(
             fields=[field.name for field in model._meta.get_fields()],
             unique_names=[],
@@ -60,6 +60,8 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
         # change it then delete the whole record
         if request.method in ["PUT","PATCH"]:
             fields["lister"].read_only = True
+            fields["payment"].read_only = True
+            fields["payment_plan_activation_date"].read_only = True
             return fields
         else:
             return fields
