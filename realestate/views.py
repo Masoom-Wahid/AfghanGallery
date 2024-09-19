@@ -198,8 +198,8 @@ class RealEstateViewSet(
 
 
     def create(self, request, *args, **kwargs):
-        img = request.FILES.get("img")
-        if not img:
+        imgs = request.FILES.getlist("img")
+        if not imgs:
             return Response(
                 {"detail" : "one image required"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -218,10 +218,12 @@ class RealEstateViewSet(
 
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        RealEstateImage.objects.create(
-            img = img,
-            realestate=instance
-        )
+        
+        for img in imgs:
+            RealEstateImage.objects.create(
+                img = img,
+                realestate=instance
+            )
 
         return Response(
             serializer.data

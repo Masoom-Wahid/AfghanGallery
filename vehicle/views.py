@@ -254,27 +254,6 @@ class VehicleViewSet(
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-
-
-
-    @swagger_auto_schema(
-        operation_description="Create a new vehicle with images.",
-        request_body=VehicleCreationSerializer,  # Use the serializer's fields directly
-        manual_parameters=[
-            openapi.Parameter(
-                'imgs', openapi.IN_FORM, description="List of images",
-                type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_FILE),
-                required=True
-            ),
-        ],
-        responses={
-            201: VehicleCreationSerializer,  # Response contains the serialized vehicle data
-            400: 'Invalid input or missing required fields'
-        }
-    )
     def create(self, request, *args, **kwargs):
         imgs = request.FILES.getlist("imgs")
         if not imgs:
