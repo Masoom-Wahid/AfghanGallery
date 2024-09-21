@@ -180,7 +180,7 @@ func main() {
 		}
 
 		user, err := get_user_instance(email)
-		if err != nil || !user.Verified {
+		if err != nil || user == nil || !user.Verified {
 			s.Close()
 			return fmt.Errorf("unauthorized")
 		}
@@ -191,7 +191,12 @@ func main() {
 	})
 
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		user, err := get_user_from_ctx(s.Context().(string))
+		user_interface := s.Context()
+		if user_interface == nil {
+			return
+		}
+
+		user, err := get_user_from_ctx(user_interface.(string))
 		if err != nil {
 			s.LeaveAll()
 			return
