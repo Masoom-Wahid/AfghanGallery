@@ -178,7 +178,6 @@ func main() {
 			s.Close()
 			return fmt.Errorf("invalid token")
 		}
-
 		user, err := get_user_instance(email)
 		if err != nil || user == nil || !user.Verified {
 			s.Close()
