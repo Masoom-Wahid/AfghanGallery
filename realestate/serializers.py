@@ -40,11 +40,6 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("area should not be negative")
         return value
 
-    def validate_price_per_area(self,value):
-        if value < 0:
-            raise serializers.ValidationError("price_per_area should not be negative")
-        return value
-
     def get_fields(self):
         fields = super().get_fields()
         request = self.context.get('request')
