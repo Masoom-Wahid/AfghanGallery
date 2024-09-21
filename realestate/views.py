@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
@@ -5,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from payment.models import PaymentPlan
 from user.perms import IsAuthenticated
 from user_info.models import UserFavs
 from .perms import IsRealEstateOwner, IsRealEstateOwnerOrIsAdminOrStaff
@@ -63,6 +65,44 @@ class RealEstateViewSet(
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+
+
+    @action(
+        methods=["POST"],
+        detail=False,
+        url_path='(?P<pk>\d+)/boost',
+        url_name="Boost a particular vehicle",
+        filter_backends=[],
+        serializer_class=None,
+    )
+    def boost_vehicle(self,request,pk=None):
+        instance : RealEstate= self.get_object()
+        payment_plan : PaymentPlan = get_object_or_404(
+            PaymentPlan,
+            pk=request.data.get("payment_plan"),
+            user=request.user
+        )
+
+
+        if payment_plan.num_of_products >= payment_plan.package.num_of_ads:
+            return Response(
+                    {
+                        "detail" : "max of this package used"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            payment_plan.num_of_products += 1
+            instance.payment = payment_plan  
+            instance.payment_plan_activation_date = timezone.now()
+            instance.save()
+            payment_plan.save()
+            return Response(
+                    status=status.HTTP_204_NO_CONTENT
+            )
+
 
 
 
