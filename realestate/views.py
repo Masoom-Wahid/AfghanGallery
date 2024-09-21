@@ -198,7 +198,7 @@ class RealEstateViewSet(
 
 
     def create(self, request, *args, **kwargs):
-        imgs = request.FILES.getlist("img")
+        imgs = request.FILES.getlist("imgs")
         if not imgs:
             return Response(
                 {"detail" : "one image required"},
