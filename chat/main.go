@@ -4,220 +4,232 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	socketio "github.com/googollee/go-socket.io"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
-/*
-we need 2 things before we can start letting users to chat
-first a token (the users token) and then the email of the user they want to talk to
-the initiator must be 'verified' or else we do not allow him to talk
-
-so it looks smth like
-
-ws://localhost:8080?token={token}&email={email}
-
-we parse the token and get the user's email => check if it exists in the db
-and we do the same for the other_user's email
-
-after all said and done we let the user initiate a chat
-BUT:
-
-	since we only store the msgs on db when a room dies
-	we have to handle the case of msgs being most in db and some in redis
-	the logic is this:
-		we keep an mutex of rooms_participants
-		until a room has persons chatting we keep the data in redis
-		why ? because of speed (although i could also just save it to db but my 'ego' i guess)
-		so what happends if a room has no person anymore ?
-		we just simply get all the data from redis and then shove em all in db
-		BUT:
-			what happens if a user joins a room when another user is already there?
-			some of the data is still in redis right?
-			for that we fetch all msgs in db first and then fetch all the msgs from redis
-			and then we merge them , and there  you go , you have all ur msgs
-
-	we create a goroutine for the listener of a user and then let the sync code to listen for the
-	inputs of the user
-	we just want {
-		"msg" : "msg"
-	}
-	since we already know who is who
-*/
-
 var (
-	ctx             = context.Background()
-	secretKey       []byte
-	roomMutex       sync.Mutex
+	// an HTTP to websocket upgrade
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	ctx      = context.Background()
+	debug    string
+	// Tracks active connections per room
 	roomConnections = make(map[string]int)
-	connections     = make(map[int]int)
-	secret_key      []byte
+	// To ensure thread-safe operations on roomConnections
+	roomMutex  sync.Mutex
+	secret_key []byte
 )
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Err loading.env file")
 	}
-
 	secret_key_var := os.Getenv("SECRET_KEY")
 	if secret_key_var == "" {
 		log.Fatalf("SECRET_KEY required")
 	}
 	secret_key = []byte(secret_key_var)
-
+	debug = os.Getenv("DEBUG")
 	Init(
 		os.Getenv("DB_PATH"),
 		os.Getenv("REDIS_HOST"),
 		os.Getenv("REDIS_PORT"),
 		os.Getenv("REDIS_PASSWORD"),
 	)
+	http.HandleFunc("/ws", handleWebSocket)
 
-	pong, err := redisClient.Ping(ctx).Result()
+	portnumber, err := strconv.ParseInt(os.Getenv("PORT"), 10, 64)
 	if err != nil {
-		log.Fatalf("Could not connect to Redis: %v", err)
+		log.Fatalf("Invalid port value %v\n", err)
 	}
-	fmt.Println("Redis connected:", pong)
-	server := socketio.NewServer(nil)
 
-	server.OnEvent("/", "join", func(s socketio.Conn, props JoinArgs) error {
-		user_ctx := s.Context().(string)
-		user, err := get_user_from_ctx(user_ctx)
-		if err != nil {
-			s.Emit("Context Failed")
-			s.Close()
-			return fmt.Errorf("Context Failed")
-		}
-		otherEmail := props.OtherEmail
-		otherUser, err := get_user_instance(otherEmail)
-		if err != nil {
-			s.Emit("error", "Invalid user")
-			return fmt.Errorf("Invalid user")
-		}
+	port := fmt.Sprintf(":%d", portnumber)
 
-		roomId, err := get_room(user.ID, otherUser.ID)
+	log.Printf("Chat WebSocket server started on %s\n", port)
+	log.Fatal(http.ListenAndServe(port, nil))
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	/*
+
+		we need 2 things before we can start letting users to chat
+		first a token (the users token) and then the email of the user they want to talk to
+		the initiator must be 'verified' or else we do not allow him to talk
+
+
+		so it looks smth like
+
+		ws://localhost:8080?token={token}&email={email}
+
+		we parse the token and get the user's email => check if it exists in the db
+		and we do the same for the other_user's email
+
+		after all said and done we let the user initiate a chat
+		BUT:
+			since we only store the msgs on db when a room dies
+			we have to handle the case of msgs being most in db and some in redis
+			the logic is this:
+				we keep an mutex of rooms_participants
+				until a room has persons chatting we keep the data in redis
+				why ? because of speed (although i could also just save it to db but my 'ego' i guess)
+				so what happends if a room has no person anymore ?
+				we just simply get all the data from redis and then shove em all in db
+				BUT:
+					what happens if a user joins a room when another user is already there?
+					some of the data is still in redis right?
+					for that we fetch all msgs in db first and then fetch all the msgs from redis
+					and then we merge them , and there  you go , you have all ur msgs
+
+			we create a goroutine for the listener of a user and then let the sync code to listen for the
+			inputs of the user
+			we just want {
+				"msg" : "msg"
+			}
+			since we already know who is who
+
+	*/
+
+	token := r.URL.Query().Get("token")
+	other_email := r.URL.Query().Get("email")
+	if token == "" || other_email == "" {
+		writeResponse("no token and email", "token and email required", w)
+		return
+	}
+	user_email, err := ParseToken(token)
+	if err != nil {
+		writeResponse("can't parse token", "no valid token", w)
+		return
+	}
+
+	user, err := get_user_instance(user_email)
+	// if no user or some err or is not verified then we do not want them talk
+	if user == nil || err != nil || !user.Verified {
+		writeResponse("the first user isnt real", "invalid token info", w)
+		return
+	}
+
+	other_user, err := get_user_instance(other_email)
+	if other_user == nil || err != nil {
+		writeResponse("the second user isnt real", "invalid token info", w)
+		return
+	}
+
+	// for some whatever reason if u want to talk to urself
+	// we aint allowing that lol
+	if user.ID == other_user.ID {
+		writeResponse("Schizophrenia", "bro has no one to talk to", w)
+		return
+	}
+
+	room_id, err := get_room(user.ID, other_user.ID)
+	if err != nil {
+		room_id, err = create_room(user.ID, other_user.ID)
 		if err != nil {
-			roomId, err = create_room(user.ID, otherUser.ID)
+			writeResponse("couldnt create a room", "err when creating a room", w)
+			return
+		}
+	}
+
+	room := strconv.Itoa(room_id)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	pubsub := redisClient.Subscribe(ctx, room)
+	defer pubsub.Close()
+
+	/*
+		get the prev msgs from the db first and then handle the msgs which are in redis
+		and then send them all
+	*/
+	prev_msgs, prev_msgs_err := get_msgs_of_room(room)
+	did_send_data := false
+	roomMutex.Lock()
+	if roomConnections[room] > 0 {
+		redis_msgs := get_msgs_from_redis(room)
+		// if we couldnt get the prev data or other there was none , just send the redis data
+		// else append the redis msgs so we can send them total
+		if prev_msgs_err != nil || prev_msgs == nil {
+			conn.WriteJSON(redis_msgs)
+			did_send_data = true
+		} else {
+			prev_msgs = append(prev_msgs, redis_msgs...)
+		}
+	}
+
+	if !did_send_data {
+		conn.WriteJSON(prev_msgs)
+	}
+	roomConnections[room]++
+	roomMutex.Unlock()
+
+	// Goroutine to listen for messages from Redis
+	go func() {
+		for {
+			msg, err := pubsub.ReceiveMessage(ctx)
 			if err != nil {
-				s.Emit("error", "Unable to create room")
-				return fmt.Errorf("Unable to create room")
+				return
+			}
+
+			var message Message
+			if err := json.Unmarshal([]byte(msg.Payload), &message); err != nil {
+				continue
+			}
+
+			if err := conn.WriteJSON(message); err != nil {
+				return
 			}
 		}
+	}()
 
-		room := strconv.Itoa(roomId)
-		prev_room := strconv.Itoa(connections[user.ID])
-		save_room_state(
-			prev_room,
-			user,
-		)
-
-		connections[user.ID] = roomId
-		s.Leave(prev_room)
-		s.Join(room)
-
-		prevMsgs, err := get_msgs_of_room(room)
+	for {
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			s.Emit("error", "Error fetching messages")
-		}
-		redisMsgs := get_msgs_from_redis(room)
-		allMessages := append(redisMsgs, prevMsgs...)
-		s.Emit("join", allMessages)
-
-		roomMutex.Lock()
-		roomConnections[room]++
-		roomMutex.Unlock()
-		return nil
-	})
-
-	server.OnEvent("/", "send_message", func(s socketio.Conn, msg MsgArgs) error {
-		user, err := get_user_from_ctx(s.Context().(string))
-		if err != nil {
-			s.Close()
-			return err
+			break
 		}
 
-		room := strconv.Itoa(connections[user.ID])
-		message := Message{
-			Msg:      msg.Msg,
-			Time:     time.Now().Format(time.RFC3339),
-			Sender:   user.ID,
-			Receiver: msg.Receiver,
+		var message Message
+		if err := json.Unmarshal(msg, &message); err != nil {
+			continue
 		}
 
+		if message.Msg == "" {
+			continue
+		}
+		message.Time = time.Now().Format(time.RFC3339)
+		message.Sender = user.ID
+		message.Receiver = other_user.ID
 		msgJSON, err := json.Marshal(message)
 		if err != nil {
-			s.Close()
-			return fmt.Errorf("failed to marshal message: %v", err)
+			continue
 		}
-
+		// Store the message in Redis
 		if err := redisClient.LPush(ctx, "chat:"+room, msgJSON).Err(); err != nil {
-			s.Close()
-			return fmt.Errorf("failed to store message in Redis: %v", err)
+			break
 		}
 
-		server.BroadcastToRoom("/", room, "receive_message", message)
-		return nil
-	})
-
-	server.OnConnect("/", func(s socketio.Conn) error {
-		url := s.URL()
-		token := url.Query().Get("token")
-		if token == "" {
-			s.Close()
-			return fmt.Errorf("token required")
+		// Publish the message to other subscribers
+		if err := redisClient.Publish(ctx, room, msgJSON).Err(); err != nil {
+			break
 		}
+	}
 
-		email, err := ParseToken(token)
-		if err != nil {
-			s.Close()
-			return fmt.Errorf("invalid token")
-		}
-		user, err := get_user_instance(email)
-		if err != nil || user == nil || !user.Verified {
-			s.Close()
-			return fmt.Errorf("unauthorized")
-		}
-
-		user_ctx := fmt.Sprintf("%v %v %v", user.ID, user.Email, user.Verified)
-		s.SetContext(user_ctx)
-		return nil
-	})
-
-	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		user_interface := s.Context()
-		if user_interface == nil {
-			return
-		}
-
-		user, err := get_user_from_ctx(user_interface.(string))
-		if err != nil {
-			s.LeaveAll()
-			return
-		}
-
-		room := connections[user.ID]
-		if room != 0 {
-			save_room_state(
-				strconv.Itoa(connections[user.ID]),
-				user,
-			)
-		}
-
-		delete(connections, user.ID)
-		s.LeaveAll()
-	})
-
-	go server.Serve()
-	defer server.Close()
-
-	port := os.Getenv("PORT")
-	http.Handle("/ws/", corsMiddleware(server))
-	log.Printf("Socket.IO server started on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	roomMutex.Lock()
+	roomConnections[room]--
+	if roomConnections[room] == 0 {
+		saveMessagesToDB(room)
+		redisClient.Del(ctx, "chat:"+room) // Clean up Redis list after saving
+		delete(roomConnections, room)
+	}
+	roomMutex.Unlock()
 }
