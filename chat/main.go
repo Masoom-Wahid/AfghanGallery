@@ -217,7 +217,7 @@ func main() {
 	defer server.Close()
 
 	port := os.Getenv("PORT")
-	http.Handle("/ws/", server)
+	http.Handle("/ws/", corsMiddleware(server))
 	log.Printf("Socket.IO server started on port %s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
