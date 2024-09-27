@@ -52,11 +52,24 @@ class Vitrine(
     )
      
     def list(self,request):
+        order_by = request.query_params.get("order_by")
+        price_order = request.query_params.get("price")
+
+
         vehicles = Vehicle.objects.vitrine_vehicles()
+        real_estates = RealEstate.objects.vitrine_real_estate()
+
+
+        # Clean Code at it's finest
+        if order_by == "latest" : vehicles = vehicles.order_by("-created_at") ; real_estates = real_estates.order_by("-created_at")
+        elif order_by == "oldest" : vehicles = vehicles.order_by("created_at")  ; real_estates = real_estates.order_by("created_at")  
+
+        if price_order == 'max': vehicles = vehicles.order_by('-price');real_estates = real_estates.order_by("-price")
+        elif price_order == 'min': vehicles = vehicles.order_by('price') ;real_estates = real_estates.order_by("price")
+
         vehicle_serializer = VitrineVehicleSerializer(vehicles, many=True)
         vehicle_data = vehicle_serializer.data
 
-        real_estates = RealEstate.objects.vitrine_real_estate()
         real_estate_serializer = VitrineRealEstateSerializer(real_estates, many=True)
         real_estate_data = real_estate_serializer.data
 
