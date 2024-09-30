@@ -507,6 +507,7 @@ class UserViewSet(
 
         if request.user and request.user.check_password(old_pass):
             request.user.set_password(new_pass)
+            request.user.save()
             return Response(
                     status=status.HTTP_204_NO_CONTENT
             )
