@@ -63,7 +63,7 @@ class UserViewSet(
             "admin_change_password"
         ]:
             return [IsOwnerOrAdminOrStaff()]
-        elif self.action == "staff":
+        elif self.action in ["staff","verify"]:
             return [IsAdmin()]
         return super().get_permissions()
 
@@ -72,10 +72,25 @@ class UserViewSet(
         serializer = CustomUserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        instance.set_password(serializer.data["password"])
-        instance.save()
+        instance.set_password(serializer.data["password"])#type:ignore
+        instance.save() #type:ignore
         token = create_token(instance)
         return Response({"token": token}, status=status.HTTP_201_CREATED)
+
+
+
+
+    @action(
+        detail=False,
+        url_path='(?P<pk>\d+)/verify',
+        methods=["POST"],
+        url_name="verify_user"
+    )
+    def verify(self,request,pk=None):
+        user = self.get_object()
+        user.is_verified=True
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
     @action(
