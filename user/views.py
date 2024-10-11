@@ -8,7 +8,7 @@ from user.paginations import HistoryPagination, StandardPagination
 from user_info.models import UserFavs, UserHistory, UserNotifications
 from user_info.serializers import UserFavsSerializer, UserHistorySerializer, UserNotifsSerializer
 from vehicle.models import Vehicle
-from .perms import IsAuthenticated
+from .perms import IsAdminOrStaff, IsAuthenticated
 from django.contrib.auth import authenticate, get_user_model
 from payment.serializers import PaymentPlanSerializer
 from .token_factory import create_token
@@ -63,7 +63,9 @@ class UserViewSet(
             "admin_change_password"
         ]:
             return [IsOwnerOrAdminOrStaff()]
-        elif self.action in ["staff","verify"]:
+        elif self.action == "verify":
+            return [IsAdminOrStaff()]
+        elif self.action == "staff":
             return [IsAdmin()]
         return super().get_permissions()
 
