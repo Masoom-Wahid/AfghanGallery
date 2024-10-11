@@ -7,6 +7,7 @@ from .models import Vehicle,VehicleImages
 class VehicleSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
     lister_name = serializers.SerializerMethodField()
+    lister_email = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
         exclude = ["payment","payment_plan_activation_date"]
@@ -18,7 +19,9 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
-
+    
+    def get_lister_email(self,obj):
+        return str(obj.lister.email)
     def get_imgs(self, obj):
         # request = self.context.get('request')
         imgs = VehicleImages.objects.filter(vehicle=obj.id)

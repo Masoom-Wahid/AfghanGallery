@@ -6,6 +6,7 @@ from .models import RealEstate,RealEstateImage
 class RealEstateSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
     lister_name = serializers.SerializerMethodField()
+    lister_email = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
         fields = "__all__"
@@ -13,6 +14,10 @@ class RealEstateSerializer(serializers.ModelSerializer):
 
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
+    
+    def get_lister_email(self,obj):
+        return str(obj.lister.email)
+
     def get_imgs(self,obj):
         all_imgs = RealEstateImage.objects.filter(realestate=obj.id)
         return [imgs.img.name for imgs in all_imgs]
