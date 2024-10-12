@@ -65,7 +65,7 @@ class UserViewSet(
             "admin_change_password"
         ]:
             return [IsOwnerOrAdminOrStaff()]
-        elif self.action in ["verify"]:
+        elif self.action in ["list","verify"]:
             return [IsAdminOrStaff()]
         elif self.action == "staff":
             return [IsAdmin()]
