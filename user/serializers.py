@@ -3,6 +3,11 @@ from django.contrib.auth import get_user_model
 from utils.serializers import generate_keyword_args
 from user.models import Room
 
+class CustomUserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        exclude = ["password","groups","user_permissions","last_login"]
+
 class CustomUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     name = serializers.CharField(required=True, allow_blank=False, allow_null=False)
@@ -17,6 +22,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'last_name',
+            "tazkira",
             'phone_no',
             "is_verified",
             "is_staff",

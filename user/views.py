@@ -15,11 +15,12 @@ from .token_factory import create_token
 from .serializers import (
     CustomUserSerializer,
     CustomUserCreateSerializer,
-    RoomSerializer
+    RoomSerializer,
+    CustomUserListSerializer
 )
 from django.shortcuts import get_object_or_404
 from .perms import IsOwnerOrAdminOrStaff,IsAdmin
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser,MultiPartParser
@@ -34,6 +35,7 @@ from realestate.serializers import VitrineRealEstateSerializer
 
 
 class UserViewSet(
+    ListModelMixin,
     CreateModelMixin,
     UpdateModelMixin,
     DestroyModelMixin,
@@ -63,7 +65,7 @@ class UserViewSet(
             "admin_change_password"
         ]:
             return [IsOwnerOrAdminOrStaff()]
-        elif self.action == "verify":
+        elif self.action in ["verify"]:
             return [IsAdminOrStaff()]
         elif self.action == "staff":
             return [IsAdmin()]
@@ -80,8 +82,13 @@ class UserViewSet(
         return Response({"token": token}, status=status.HTTP_201_CREATED)
 
 
-
-
+    def list(self, request, *args, **kwargs):
+        is_verified = request.query_params.get("is_verified",True)
+        users = self.queryset.filter(is_verified=is_verified,is_staff=False,is_superuser=False)
+        serializer = CustomUserListSerializer(users,many=True)
+        return Response(
+            serializer.data
+        )
     @action(
         detail=False,
         url_path='(?P<pk>\d+)/verify',
