@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework import status
-from rest_framework.mixins import CreateModelMixin, DestroyModelMixin,RetrieveModelMixin
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin,RetrieveModelMixin
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -52,6 +52,7 @@ class PackagesViewset(ModelViewSet):
 
 class PaymentPlanViewSet(
     GenericViewSet,
+    ListModelMixin,
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin
@@ -64,13 +65,19 @@ class PaymentPlanViewSet(
             "destroy"
         ]:
             return [IsAdminOrStaff()]
-        elif self.action == "retrieve":
+        elif self.action in ["retrieve","list"]:
             return [PaymentOwnerOrAdminOrStaff()]
         return super().get_permissions()
 
-    queryset = PaymentPlan.objects.all()
+    queryset = PaymentPlan.objects.all() #type:ignore
     serializer_class = PaymentPlanSerializer
 
+
+
+    def list(self, request, *args, **kwargs):
+        payments = PaymentPlan.objects.filter(user=request.user) #type:ignore
+        serializer = PaymentPlanSerializer(payments,many=True)
+        return Response(serializer.data)
 
 
     @swagger_auto_schema(

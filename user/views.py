@@ -30,8 +30,8 @@ from payment.models import PaymentPlan
 from .models import CustomUser, Room
 from django.utils import timezone
 from django.db.models import F,ExpressionWrapper,DurationField,DateTimeField
-from vehicle.serializers import VitrineVehicleSerializer
-from realestate.serializers import VitrineRealEstateSerializer
+from vehicle.serializers import VehicleSerializer, VitrineVehicleSerializer
+from realestate.serializers import RealEstateSerializer, VitrineRealEstateSerializer
 
 
 class UserViewSet(
@@ -62,7 +62,8 @@ class UserViewSet(
             "upload_tazkira",
             "payment_history",
             "reset_password",
-            "admin_change_password"
+            "admin_change_password",
+            "products"
         ]:
             return [IsOwnerOrAdminOrStaff()]
         elif self.action in ["list","verify"]:
@@ -100,6 +101,21 @@ class UserViewSet(
         user.is_verified=True
         user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    @action(detail=False,methods=["GET"])
+    def products(self,request):
+        vehicles = Vehicle.objects.filter(lister=request.user)
+        real_estates = RealEstate.objects.filter(lister=request.user)
+        
+
+        result = VehicleSerializer(vehicles,many=True).data + RealEstateSerializer(real_estates,many=True).data #type:ignore
+
+        return Response(
+            result
+        )
+
+
 
 
     @action(
