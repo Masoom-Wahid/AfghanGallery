@@ -32,7 +32,7 @@ from django.utils import timezone
 from django.db.models import F,ExpressionWrapper,DurationField,DateTimeField
 from vehicle.serializers import VehicleSerializer, VitrineVehicleSerializer
 from realestate.serializers import RealEstateSerializer, VitrineRealEstateSerializer
-
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserViewSet(
     ListModelMixin,
@@ -79,8 +79,8 @@ class UserViewSet(
         instance = serializer.save()
         instance.set_password(serializer.data["password"])#type:ignore
         instance.save() #type:ignore
-        token = create_token(instance)
-        return Response({"token": token}, status=status.HTTP_201_CREATED)
+        token = RefreshToken(instance) #type:ignore
+        return Response({"refresh_token": str(token),"access_token" : str(token.access_token)}, status=status.HTTP_201_CREATED)
 
 
     def list(self, request, *args, **kwargs):
@@ -559,29 +559,3 @@ class UserViewSet(
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
-
-class JwtToken(APIView):
-    def post(self,request):
-        email = request.data.get("email",None)
-        password = request.data.get("password",None)
-        if not email or not password:
-            return Response(
-                {"detail" : "'email' and 'password' required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = authenticate(email=email,password=password)
-        if user:
-            token = create_token(user)
-            return Response(
-                {
-                    "token" : token,
-                },
-                status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"detail" : "Invalid User"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
