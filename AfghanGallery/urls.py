@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls.conf import include
 from realestate.views import RealEstateViewSet
-from user.views import JwtToken,UserViewSet
+from user.views import UserViewSet
 from vehicle.views import VehicleViewSet
 from payment.views import PackagesViewset,PaymentPlanViewSet
 from rest_framework import permissions
