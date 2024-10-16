@@ -79,7 +79,7 @@ class UserViewSet(
         instance = serializer.save()
         instance.set_password(serializer.data["password"])#type:ignore
         instance.save() #type:ignore
-        token = RefreshToken(instance) #type:ignore
+        token = RefreshToken.for_user(instance) #type:ignore
         return Response({"refresh_token": str(token),"access_token" : str(token.access_token)}, status=status.HTTP_201_CREATED)
 
 
