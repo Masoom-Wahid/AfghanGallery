@@ -115,7 +115,6 @@ class Vehicle(models.Model):
     description = models.TextField(null=True,blank=True)
     price = models.IntegerField(null=False,blank=False)
     brand = models.CharField(max_length=150,choices=BRAND_CHOICES,null=False,blank=False)
-    series = models.CharField(max_length=255,null=False,blank=False)
     # ON_SALE or RENTAL
     type = models.CharField(max_length=20,choices=VEHICLE_TYPES,null=False,blank=False)
     category = models.CharField(max_length=80,choices=VEHICLE_CATEGORY_CHOICES,null=False,blank=False)
@@ -137,7 +136,6 @@ class Vehicle(models.Model):
     plate_model = models.SmallIntegerField(null=False,blank=False,db_index=True)
 
     payment = models.ForeignKey(PaymentPlan,blank=True,null=True,on_delete=models.SET_NULL)
-    discount = models.FloatField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     payment_plan_activation_date = models.DateTimeField(null=True,blank=True)
 
 
@@ -154,8 +152,7 @@ class Vehicle(models.Model):
 
 
     def get_price(self) -> int:
-        discount_amount : int = (self.price /  100)  * self.discount
-        return self.price - discount_amount
+        return self.price
 
 
 class VehicleImages(models.Model):
