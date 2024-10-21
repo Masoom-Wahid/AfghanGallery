@@ -89,7 +89,7 @@ class VehicleCreationSerializer(serializers.ModelSerializer):
 class VitrineVehicleSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
-    type = serializers.SerializerMethodField()
+    ad_type = serializers.SerializerMethodField()
     package = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
@@ -105,7 +105,7 @@ class VitrineVehicleSerializer(serializers.ModelSerializer):
     def get_name(self,obj):
         return f"{obj.brand}  {obj.model} {obj.year}"
 
-    def get_type(self,_) -> str:
+    def get_ad_type(self,_) -> str:
         return "vehicles"
 
     def get_img(self,obj):

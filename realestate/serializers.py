@@ -75,7 +75,7 @@ class RealEstateCreationSerializer(serializers.ModelSerializer):
 
 class VitrineRealEstateSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()
-    type = serializers.SerializerMethodField()
+    ad_type = serializers.SerializerMethodField()
     package = serializers.SerializerMethodField()
     class Meta:
         model = RealEstate
@@ -87,7 +87,7 @@ class VitrineRealEstateSerializer(serializers.ModelSerializer):
             return obj.payment.package.name
         else:
             return None
-    def get_type(self,_) -> str:
+    def get_ad_type(self,_) -> str:
         return "realestates"
     def get_img(self,obj):
         first_img = RealEstateImage.objects.filter(
