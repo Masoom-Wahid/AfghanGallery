@@ -8,6 +8,8 @@ class VehicleSerializer(serializers.ModelSerializer):
     imgs = serializers.SerializerMethodField()
     lister_name = serializers.SerializerMethodField()
     lister_email = serializers.SerializerMethodField()
+    ad_type = serializers.SerializerMethodField()
+    
     class Meta:
         model = Vehicle
         exclude = ["payment","payment_plan_activation_date"]
@@ -17,6 +19,9 @@ class VehicleSerializer(serializers.ModelSerializer):
             model=model
         )
 
+
+    def get_ad_type(self,obj):
+        return "vehicles"
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
     

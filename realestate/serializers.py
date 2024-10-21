@@ -4,6 +4,7 @@ from utils.serializers import generate_keyword_args
 from .models import RealEstate,RealEstateImage
 
 class RealEstateSerializer(serializers.ModelSerializer):
+    ad_type = serializers.SerializerMethodField()
     imgs = serializers.SerializerMethodField()
     lister_name = serializers.SerializerMethodField()
     lister_email = serializers.SerializerMethodField()
@@ -11,7 +12,11 @@ class RealEstateSerializer(serializers.ModelSerializer):
         model = RealEstate
         fields = "__all__"
 
+    
 
+
+    def get_ad_type(self,obj):
+        return "realestates"
     def get_lister_name(self,obj):
         return f"{obj.lister.name} {obj.lister.last_name}"
     
