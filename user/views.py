@@ -105,10 +105,28 @@ class UserViewSet(
 
     @action(detail=False,methods=["GET"])
     def products(self,request):
-        vehicles = Vehicle.objects.filter(lister=request.user)
-        real_estates = RealEstate.objects.filter(lister=request.user)
+        now = timezone.now()
+        vehicles = Vehicle.objects.filter(
+            lister=request.user
+        ).annotate(
+            payment_expiration_time=ExpressionWrapper(
+                F('payment_plan_activation_date') + F('payment__package__vitrine'),
+                output_field=DateTimeField()
+            )
+        ).filter(
+            Q(payment__isnull=True) | Q(payment_expiration_time__lte=now)
+        )
         
-
+        real_estates = RealEstate.objects.filter(
+            lister=request.user
+        ).annotate(
+            payment_expiration_time=ExpressionWrapper(
+                F('payment_plan_activation_date') + F('payment__package__vitrine'),
+                output_field=DateTimeField()
+            )
+        ).filter(
+            Q(payment__isnull=True) | Q(payment_expiration_time__lte=now)
+        )         
         result = VehicleSerializer(vehicles,many=True).data + RealEstateSerializer(real_estates,many=True).data #type:ignore
 
         return Response(
