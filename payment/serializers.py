@@ -8,7 +8,11 @@ class PackagesSerializer(serializers.ModelSerializer):
 
 
 class PaymentPlanSerializer(serializers.ModelSerializer):
+   package_name = serializers.SerializerMethodField()
    class Meta:
       model = PaymentPlan
       fields = "__all__"
+
+   def get_package_name(self,obj):
+      return obj.package.name
 
