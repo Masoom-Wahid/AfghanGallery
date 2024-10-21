@@ -93,7 +93,7 @@ class VitrineVehicleSerializer(serializers.ModelSerializer):
     package = serializers.SerializerMethodField()
     class Meta:
         model = Vehicle
-        fields = ["type","id","name","price","img","package"]
+        fields = ["type","id","name","price","img","package","ad_type"]
 
 
     def get_package(self,obj) -> str | None:
