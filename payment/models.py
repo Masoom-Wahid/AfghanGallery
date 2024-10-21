@@ -40,6 +40,13 @@ class PaymentPlan(models.Model):
     # although using .count() would be better but i dont want to count the rows every time
     # so who knows which one is better
     num_of_products = models.PositiveIntegerField(default=0,db_index=True)
+    
+
+    @property
+    def remaining_products(self):
+        return  self.package.num_of_ads - self.num_of_products
+
+
 
     def __str__(self) -> str:
         return f"{self.user.email} == {self.package.name}"
